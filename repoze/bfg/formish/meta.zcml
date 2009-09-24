@@ -6,15 +6,15 @@
       name="form"
       namespace="http://namespaces.repoze.org/formish"
       schema="repoze.bfg.formish.zcml.IFormDirective"
-      handler="repoze.bfg.zcml.FormDirective"
+      handler="repoze.bfg.formish.zcml.FormDirective"
       />
 
   <meta:directive
       name="action"
       namespace="http://namespaces.repoze.org/formish"
-      usedIn="repoze.workflow.zcml.IWorkflowDirective"
-      schema="repoze.workflow.zcml.IActionDirective"
-      handler="repoze.workflow.zcml.ActionDirective"
+      usedIn="repoze.bfg.formish.zcml.IFormDirective"
+      schema="repoze.bfg.formish.zcml.IActionDirective"
+      handler="repoze.bfg.formish.zcml.action"
       />
 
   <meta:directive

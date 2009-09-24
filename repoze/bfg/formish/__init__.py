@@ -58,7 +58,7 @@ class TemplateLoader(object):
 class ZPTRenderer(object):
     def __init__(self, directories=None):
         settings = get_settings()
-        auto_reload = settings and settings['auto_reload'] or False
+        auto_reload = settings and settings['reload_templates'] or False
         if directories is None:
             directories = []
         if isinstance(directories, basestring):
@@ -91,7 +91,13 @@ class Form(formish.Form):
         if not 'renderer' in kw:
             kw['renderer'] = get_default_renderer() # need to defer this til now
         formish.Form.__init__(self, *arg, **kw)
+
+    def set_widget(self, title, widget):
+        self[title].widget = widget
         
-    
+class ValidationError(Exception):
+    def __init__(self, **kw):
+        self.errors = kw
+
     
     
