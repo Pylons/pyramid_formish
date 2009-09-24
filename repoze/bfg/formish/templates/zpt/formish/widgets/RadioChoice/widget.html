@@ -1,0 +1,14 @@
+<div tal:condition="field.widget.none_option" class="radiobutton">
+  <input type="radio" name="${field.name}" id="${field.cssname}-noneoption" value="${field.widget.get_none_option_value(field)}" />
+  <label for="${field.cssname}-noneoption">${field.widget.none_option[1]}</label>
+</div>
+<div tal:repeat="pair enumerate(field.widget.get_options(field))"
+     class="radiobutton">
+  <input type="radio" 
+         name="${field.name}" 
+         id="${field.cssname}-${pair[0]}"
+         value="${pair[1][0]}"
+         tal:attributes="checked field.widget.selected(pair[1], field) or None"/>
+  <label for="${field.cssname}-${pair[0]}">${pair[1][1]}</label>
+</div>
+

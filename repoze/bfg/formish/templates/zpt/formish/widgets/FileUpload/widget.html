@@ -1,0 +1,23 @@
+<div class="preview"
+     tal:define="star ('*' in field.name);
+                 value_name (not star) and field.value['name'][0] or '';
+                 value_default (not star) and field.value['default'][0] or '';
+                 mimetype (not star) and field.value['mimetype'][0] or '';
+                 mimetype mimetype or '';"
+     >
+  <div tal:condition="field.widget.show_file_preview"
+       class="icon ${mimetype.replace('/','_')}">
+    <img tal:condition="field.widget.show_image_thumbnail and value name != '' and mimetype.startswith('image')"
+         src="${field.widget.urlfactory(value_name)}?size=20x20"/>
+    <img tal:condition="not (field.widget.show_image_thumbnail and value name != '' and mimetype.startswith('image')) and field.widget_thumbnail_default is not None"
+         src="${field.widget.image_thumbnail_default"/>
+  </div>
+  <a tal:condition="field.widget.show_download_link"
+     href="${field.widget.urlfactory(value_name)">download</a>
+</div>
+
+<input id="${field.cssname}-remove" type="checkbox" name="${field.name}.remove" value="true" />
+<input id="${field.cssname}-id" type="hidden" name="${field.name}.name" value="${value_name}" />
+<input id="${field.cssname}-mimetype" type="hidden" name="${field.name}.mimetype" value="${mimetype}" />
+<input id="${field.cssname}-default" type="hidden" name="${field.name}.default" value="${value_default}" />
+<input id="${field.cssname}" type="file" name="${field.name}.file" />
