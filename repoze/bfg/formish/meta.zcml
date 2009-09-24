@@ -1,0 +1,28 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:meta="http://namespaces.zope.org/meta">
+
+  <meta:groupingDirective
+      name="form"
+      namespace="http://namespaces.repoze.org/formish"
+      schema="repoze.bfg.formish.zcml.IFormDirective"
+      handler="repoze.bfg.zcml.FormDirective"
+      />
+
+  <meta:directive
+      name="action"
+      namespace="http://namespaces.repoze.org/formish"
+      usedIn="repoze.workflow.zcml.IWorkflowDirective"
+      schema="repoze.workflow.zcml.IActionDirective"
+      handler="repoze.workflow.zcml.ActionDirective"
+      />
+
+  <meta:directive
+      name="add_template_path"
+      namespace="http://namespaces.repoze.org/formish"
+      schema="repoze.bfg.formish.zcml.IAddTemplatePath"
+      handler="repoze.bfg.formish.zcml.add_template_path"
+      />
+
+</configure>
+
