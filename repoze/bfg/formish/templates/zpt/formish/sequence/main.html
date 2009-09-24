@@ -5,7 +5,7 @@
    class="${field.classes}${addremoveclass}${sortableclass}">
   <span class="formish-sequencedata" 
         title="batch_add_count=${field.widget.batch_add_count}"> </span>
-  <legend tal:condition="field.title">${field.title</legend>
+  <legend tal:condition="field.title">${field.title}</legend>
   <div tal:condition="hasattr(field.errors, 'message')">${unicode(field.error)}</div>
   <span tal:repeat="f field.fields" tal:replace="structure f()"/>
   <div tal:condition="str(field.description) != ''" 
