@@ -66,7 +66,7 @@ schema.
 When the ``meta.zcml`` of :mod:`repoze.bfg.formish` is included
 within your :mod:`repoze.bfg` application, you can make use of the
 ``formish:form`` ZCML directive.  The ZCML directive uses two major
-concepts: schemas and actions.
+concepts: *schemas* and *controllers*.
 
 You must add the following to your application's ``configure.zcml`` to
 use the ``formish:form`` directive:
@@ -87,36 +87,34 @@ name referring to the schema class:
      for=".models.MyModel"
      name="add_community.html"
      schema=".forms.AddCommunitySchema"
-     template="templates/form_template.pt"
-     handler=".forms.Show"/>
+     renderer="templates/form_template.pt"
+     controller=".forms.AddCommunityController"/>
 
 A ``formish:form`` configures one or more special :mod:`repoze.bfg`
 "view" callables that render a form.
 
-The ``for`` and ``name`` attributes of a ``formish:form`` tag mirror
-the meaning of the meanings of these names in :mod:`repoze.bfg`
-``view`` ZCML directive.  ``for`` represents the class or interface
-which the context must implement for this view to be invoked.
-``name`` is the view name.
+The ``for``, ``name``, and ``renderer`` attributes of a
+``formish:form`` tag mirror the meaning of the meanings of these names
+in :mod:`repoze.bfg` ``view`` ZCML directive.  ``for`` represents the
+class or interface which the context must implement for this view to
+be invoked.  ``name`` is the view name.  ``renderer`` is a Chameleon
+ZPT template which will be used to render the form when it is first
+presented, or when form validation fails.  The template is either a
+BFG "resource specification" or an absolute or ZCML-package-relative
+path to an on-disk template.
 
 The above example assumes that there is a ``forms`` module which lives
 in the same directory as the ``configure.zcml`` of your application,
 and that it contains a schema definition named ``AddCommunitySchema``.
 This is the value represented by the ``schema`` attribute above.
 
-It also names a Chameleon ZPT template via its ``template`` attribute
-which will be used to render the form when it is first presented, or
-when form validation fails.  The template is either a BFG "resource
-specification" or an absolute or ZCML-package-relative path to an
-on-disk template.
-
-The ``handler`` attribute names a "default" *handler* for this form
-definition.  The definition of a *handler* is discussed below; for now
-please assume it is a dotted Python name which specifies a special
-kind of callable.  The above example names it as ``.forms.Show``,
-which makes the assumption that a handler callable named ``Show``
-lives in the package containing the ``configure.zcml`` file in a
-module named ``forms``.
+The ``controller`` attribute names a *controller* for this form
+definition.  The definition of a *controller* is discussed below; for
+now please assume it is a dotted Python name which specifies a special
+kind of class.  The above example names it as
+``.forms.AddCommunityController``, which makes the assumption that a
+handler callable named ``AddCommunityController`` lives in the package
+containing the ``configure.zcml`` file within a module named ``forms``.
      
 Actions
 -------
@@ -132,39 +130,47 @@ names a *handler*, a *param*, and a *title*.  For example:
      name="add_community.html"
      schema=".forms.AddCommunitySchema"
      template="templates/form_template.pt"
-     handler=".forms.Show">
+     controller=".forms.AddCommunityController">
 
-     <action
-       handler=".forms.Cancel"
-       param="form_cancel"
+     <formish:action
+       name="submit"
+       title="Submit"
+       />
+
+     <formish:action
+       name="cancel"
        title="Cancel"
+       validate="false"
        />
 
    </formish:form>
 
-Any number of ``action`` tags can be present within a ``formish:form``
-tag.
+Any number of ``formish:action`` tags can be present within a
+``formish:form`` tag.
 
-Each ``action`` tag represents a submit button at the bottom of the
-form that will be given an HTML "value" matching the ``param``
-attribute.  When this button is pressed, the value of ``param`` will
-be present in the ``request.params`` dictionary.  The *value* of the
+Each ``formish:action`` tag represents a submit button at the bottom
+of the form that will be given an HTML "value" matching the ``name``
+attribute.  When this button is pressed, the value of ``name`` will be
+present in the ``request.params`` dictionary.  The *value* of the
 button (the text visible to the user) will be the value of the
 ``title`` attribute.
 
-Each action additionally must specify a ``handler`` attribute, which
-is the dotted Python to a *factory* which has the capability to
-influence the painting of the form as well as what happens when form
-validation succeeds.  A particular handler is invoked only when the
-value of the ``param`` attribute for its action is present as a key in
-the ``request.params`` dictionary.
+The ``name`` attribute of an action tag also represents a *handler*
+for an action.  A particular handler is invoked only when the value of
+the ``param`` attribute for its action is present as a key in the
+``request.params`` dictionary.
 
 If there is no key in in ``request.params`` dictionary which matches
-the ``param`` of a particular form's action, the handler of the form
-itself is called.  For example, if the form we're defining above is
-invoked with a request has a params dict that has the value
-``form_cancel``, the ``.forms.Cancel`` handler is called.  But if
-``form_cancel`` is not present, the ``.forms.Show`` handler is called.
+the ``param`` of a particular form's action, the ``__call__`` of the
+controller is called.  For example, if the form we're defining above
+is invoked with a request that has a params dict that has the value
+``cancel`` as a key, the ``handle_cancel`` method of the
+``.forms.AddCommunityController`` handler will be called after
+validation is performed.  But if neither ``submit`` nor ``cancel`` is
+present in ``request.params``, the ``__call__`` method of the
+controller is called, and no validation is performed.
+
+XXX left off here, fix the above ^^^
 
 Handlers
 --------
