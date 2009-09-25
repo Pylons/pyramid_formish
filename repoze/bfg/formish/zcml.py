@@ -21,10 +21,10 @@ from repoze.bfg.formish import IFormishSearchPath
 
 class IFormDirective(Interface):
     schema = GlobalObject(title=u'schema', required=True)
-    display = GlobalObject(title=u'display', required=True)
+    controller = GlobalObject(title=u'display', required=True)
     for_ = GlobalObject(title=u'for', required=False)
     name = TextLine(title=u'name', required=False)
-    template = TextLine(title=u'template', required=False)
+    renderer = TextLine(title=u'renderer (template)', required=False)
     permission = TextLine(title=u'permission', required=False)
     containment = GlobalObject(title=u'containment', required=False)
     route_name = TextLine(title=u'route_name', required=False)
@@ -33,15 +33,15 @@ class IFormDirective(Interface):
 class FormDirective(zope.configuration.config.GroupingContextDecorator):
     implements(zope.configuration.config.IConfigurationContext,
                IFormDirective)
-    def __init__(self, context, schema, display, for_=None, name='',
-                 template=None, permission=None, containment=None,
+    def __init__(self, context, schema, controller, for_=None, name='',
+                 renderer=None, permission=None, containment=None,
                  route_name=None, wrapper=None):
         self.context = context
         self.schema = schema
-        self.display = display
+        self.controller = controller
         self.for_ = for_
         self.name = name
-        self.template = template
+        self.renderer = renderer
         self.permission  = permission
         self.containment = containment
         self.route_name = route_name
@@ -49,92 +49,73 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
         self._actions = [] # mutated by subdirectives
 
     def after(self):
-        def form_show_view(context, request):
-            schema = self.schema()
-            form = Form(schema, add_default_action=False)
-            for action in self._actions:
-                form.add_action(action['param'], action['title'])
-            defaults = {'form':form, 'schema':schema}
-            request.schema = schema
-            request.form = form
-            result = self.display(context, request)
-            if isinstance(result, dict):
-                defaults.update(result)
-            return defaults
-
-        view(self.context,
-             permission=self.permission,
-             for_=self.for_,
-             view=form_show_view,
-             name=self.name,
-             route_name=self.route_name,
-             containment=self.containment,
-             renderer=self.template,
-             wrapper=self.wrapper)
-
-        for action in self._actions:
-            form_action_view = make_form_action_view(
-                action, self._actions, self.schema, self.display)
+        display_action = {'name':None, 'validate':False, 'title':None}
+        for action in [display_action] + self._actions:
+            form_view = make_form_view(action, self._actions,
+                                       self.schema, self.controller)
             view(self.context,
                  permission=self.permission,
                  for_=self.for_,
-                 view=form_action_view,
+                 view=form_view,
                  name=self.name,
+                 request_param=action['name'],
                  route_name=self.route_name,
-                 request_param=action['param'],
                  containment=self.containment,
-                 renderer=self.template,
+                 renderer=self.renderer,
                  wrapper=self.wrapper)
 
-def make_form_action_view(action, actions, schema, display):
-    def form_action_view(context, request):
-        this_schema = schema()
-        form = Form(this_schema, add_default_action=False)
+def make_form_view(action, actions, schema_factory, controller_factory):
+    validate = action['validate']
+    name = action['name']
+    title = action['title']
+    def form_view(context, request):
+        schema = schema_factory()
+        form = Form(schema, add_default_action=False)
         for a in actions:
-            form.add_action(a['param'], a['title'])
-        request.form = form
+            form.add_action(a['name'], a['title'])
+        controller = controller_factory(context, request)
+        if hasattr(controller, 'defaults'):
+            defaults = controller.defaults()
+            form.defaults = defaults
+        if hasattr(controller, 'setup'):
+            controller.setup(schema, form)
+        request.controller = controller
         request.schema = schema
-        request.converted = {}
-        defaults = {'form':form, 'schema':schema}
-        if action['validate']:
-            try:
-                converted = form.validate(request,check_form_name=False)
-                request.converted = converted
-                return action['success'](context, request)
-            except validation.FormError, e:
-                result = display(context, request)
-                if result is None:
-                    result = {}
-                if isinstance(result, dict):
-                    defaults.update(result)
-                return defaults
-            except ValidationError, e:
-                for k, v in e.errors.items():
-                    form.errors[k] = v
-                result = display(context, request)
-                if result is None:
-                    result = {}
-                if isinstance(result, dict):
-                    defaults.update(result)
-                return defaults
-                    
+        request.form = form
+        request.action_name = name
+        if name:
+            handler = 'handle_%s' % name
+            if validate:
+                if hasattr(controller, 'validate'):
+                    result = controller.validate()
+                else:
+                    try:
+                        converted = form.validate(request,check_form_name=False)
+                        result = getattr(controller, handler)(converted)
+                    except validation.FormError, e:
+                        result = controller()
+                    except ValidationError, e:
+                        for k, v in e.errors.items():
+                            form.errors[k] = v
+                        result = controller()
+            else:
+                result = getattr(controller, handler)()
         else:
-            return action['success'](context, request)
-    return form_action_view
+            result = controller()
+        return result
+    return form_view
 
 class IActionDirective(Interface):
     """ The interface for an action subdirective """
-    success = GlobalObject(title=u'success handler', required=True)
-    param = TextLine(title=u'param', required=True)
+    name = TextLine(title=u'name', required=True)
     title = TextLine(title=u'title', required=False)
     validate = Bool(title=u'validate', required=False, default=True)
 
-def action(context, success, param, title=None, validate=True):
+def action(context, name, title=None, validate=True):
     append = context.context._actions.append
     if title is None:
-        title = param.capitalize()
-    action = {'success':success, 'param':param, 'title':title,
-              'validate':validate}
+        title = name.capitalize()
+    action = {'name':name, 'title':title, 'validate':validate}
     append(action)
     
 class IAddTemplatePath(Interface):

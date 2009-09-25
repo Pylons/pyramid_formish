@@ -96,8 +96,5 @@ class Form(formish.Form):
         self[title].widget = widget
         
 class ValidationError(Exception):
-    def __init__(self, **kw):
-        self.errors = kw
-
-    
-    
+    def __init__(self, **errors):
+        self.errors = errors
