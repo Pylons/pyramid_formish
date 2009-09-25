@@ -43,8 +43,8 @@ class TemplateLoader(object):
     def load(self, filename):
         for path in self.search_path:
             path = os.path.join(path, filename)
-            if path in self.notexists:
-                mako.exceptions.TopLevelLookupException(
+            if (path in self.notexists) and (not self.auto_reload):
+                raise mako.exceptions.TopLevelLookupException(
                     "Can not find template %s" % filename)
             try:
                 return PageTemplateFile(path, parser=self.parser,

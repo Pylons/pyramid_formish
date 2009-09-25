@@ -142,13 +142,13 @@ class TestMakeFormView(unittest.TestCase):
         import validatish
         from repoze.bfg.formish import ValidationError
         class DummySchema(schemaish.Structure):
-            title = schemaish.String(validator=validatish.validator.Required())
+            title = schemaish.String()
         action = {'name':'submit', 'title':'submit', 'validate':True}
         actions = [action]
         view = self._callFUT(action, actions, DummySchema, DummyController)
         context = testing.DummyModel()
         request = testing.DummyRequest()
-        request.exception = ValidationError
+        request.exception = ValidationError(title='a')
         result = view(context, request)
         self.assertEqual(result, '123')
         self.assertEqual(request.action_name, 'submit')
