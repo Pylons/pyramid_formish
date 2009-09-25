@@ -66,7 +66,7 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
 
 def make_form_view(action, actions, schema_factory, controller_factory):
     validate = action['validate']
-    name = action['name']
+    action_name = action['name']
     title = action['title']
     def form_view(context, request):
         schema = schema_factory()
@@ -82,9 +82,9 @@ def make_form_view(action, actions, schema_factory, controller_factory):
         request.controller = controller
         request.schema = schema
         request.form = form
-        request.action_name = name
-        if name:
-            handler = 'handle_%s' % name
+        request.action_name = action_name
+        if action_name:
+            handler = 'handle_%s' % action_name
             if validate:
                 if hasattr(controller, 'validate'):
                     result = controller.validate()

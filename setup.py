@@ -15,6 +15,7 @@
 __version__ = '0.0'
 
 import os
+import sys
 
 from ez_setup import use_setuptools
 use_setuptools()
@@ -30,6 +31,9 @@ requires = [
     'repoze.bfg',
     'formish',
     ]
+
+if sys.version_info[:2] < (2,5):
+    requires.append('uuid')
 
 setup(name='repoze.bfg.formish',
       version=__version__,
