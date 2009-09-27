@@ -64,47 +64,56 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
 
 def make_form_view(action, actions, controller_factory):
     validate = action['validate']
-    action_name = action['name']
+    form_action = action['name']
     title = action['title']
     def form_view(context, request):
-        controller = controller_factory(context, request)
-        schema = schemaish.Structure()
-        if hasattr(controller, 'form_fields'):
-            for fieldname, field in controller.form_fields():
-                schema.add(fieldname, field)
-        form = Form(schema, add_default_action=False)
-        for a in actions:
-            form.add_action(a['name'], a['title'])
-        if hasattr(controller, 'form_widgets'):
-            widgets = controller.form_widgets(schema)
-            for name, widget in widgets.items():
-                form[name].widget = widget
-        if hasattr(controller, 'form_defaults'):
-            defaults = controller.form_defaults()
-            form.defaults = defaults
-        request.controller = controller
-        request.schema = schema
+        request.form_action = form_action
+        form_controller = controller_factory(context, request)
+        request.form_controller = form_controller
+        form_schema = schemaish.Structure()
+        request.form_schema = form_schema
+        form_fields = []
+        if hasattr(form_controller, 'form_fields'):
+            form_fields = form_controller.form_fields()
+            for fieldname, field in form_controller.form_fields():
+                form_schema.add(fieldname, field)
+        request.form_fields = form_fields
+        form = Form(form_schema, add_default_action=False)
         request.form = form
-        request.action_name = action_name
-        if action_name:
-            handler = 'handle_%s' % action_name
+        form_actions = [(a['name'], a['title']) for a in actions]
+        for tup in form_actions:
+            form.add_action(*tup)
+        request.form_actions = form_actions
+        form_widgets = []
+        if hasattr(form_controller, 'form_widgets'):
+            form_widgets = form_controller.form_widgets(form_fields)
+            for name, widget in form_widgets.items():
+                form[name].widget = widget
+        request.form_widgets = form_widgets
+        defaults = None
+        if hasattr(form_controller, 'form_defaults'):
+            defaults = form_controller.form_defaults()
+            form.defaults = defaults
+        request.form_defaults = defaults
+        if form_action:
+            handler = 'handle_%s' % form_action
             if validate:
-                if hasattr(controller, 'validate'):
-                    result = controller.validate()
+                if hasattr(form_controller, 'validate'):
+                    result = form_controller.validate()
                 else:
                     try:
                         converted = form.validate(request,check_form_name=False)
-                        result = getattr(controller, handler)(converted)
+                        result = getattr(form_controller, handler)(converted)
                     except validation.FormError, e:
-                        result = controller()
+                        result = form_controller()
                     except ValidationError, e:
                         for k, v in e.errors.items():
                             form.errors[k] = v
-                        result = controller()
+                        result = form_controller()
             else:
-                result = getattr(controller, handler)()
+                result = getattr(form_controller, handler)()
         else:
-            result = controller()
+            result = form_controller()
         return result
     return form_view
 
