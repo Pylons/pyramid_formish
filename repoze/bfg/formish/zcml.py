@@ -2,6 +2,7 @@ import os
 from pkg_resources import resource_filename
 
 from formish import validation
+import schemaish
 
 from zope.component import getSiteManager
 import zope.configuration.config
@@ -20,7 +21,6 @@ from repoze.bfg.formish import ValidationError
 from repoze.bfg.formish import IFormishSearchPath
 
 class IFormDirective(Interface):
-    schema = GlobalObject(title=u'schema', required=True)
     controller = GlobalObject(title=u'display', required=True)
     for_ = GlobalObject(title=u'for', required=False)
     name = TextLine(title=u'name', required=False)
@@ -33,11 +33,10 @@ class IFormDirective(Interface):
 class FormDirective(zope.configuration.config.GroupingContextDecorator):
     implements(zope.configuration.config.IConfigurationContext,
                IFormDirective)
-    def __init__(self, context, schema, controller, for_=None, name='',
+    def __init__(self, context, controller, for_=None, name='',
                  renderer=None, permission=None, containment=None,
                  route_name=None, wrapper=None):
         self.context = context
-        self.schema = schema
         self.controller = controller
         self.for_ = for_
         self.name = name
@@ -51,8 +50,7 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
     def after(self):
         display_action = {'name':None, 'validate':False, 'title':None}
         for action in [display_action] + self._actions:
-            form_view = make_form_view(action, self._actions,
-                                       self.schema, self.controller)
+            form_view = make_form_view(action, self._actions, self.controller)
             view(self.context,
                  permission=self.permission,
                  for_=self.for_,
@@ -64,21 +62,26 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
                  renderer=self.renderer,
                  wrapper=self.wrapper)
 
-def make_form_view(action, actions, schema_factory, controller_factory):
+def make_form_view(action, actions, controller_factory):
     validate = action['validate']
     action_name = action['name']
     title = action['title']
     def form_view(context, request):
-        schema = schema_factory()
+        controller = controller_factory(context, request)
+        schema = schemaish.Structure()
+        if hasattr(controller, 'form_fields'):
+            for fieldname, field in controller.form_fields():
+                schema.add(fieldname, field)
         form = Form(schema, add_default_action=False)
         for a in actions:
             form.add_action(a['name'], a['title'])
-        controller = controller_factory(context, request)
-        if hasattr(controller, 'defaults'):
-            defaults = controller.defaults()
+        if hasattr(controller, 'form_widgets'):
+            widgets = controller.form_widgets(schema)
+            for name, widget in widgets.items():
+                form[name].widget = widget
+        if hasattr(controller, 'form_defaults'):
+            defaults = controller.form_defaults()
             form.defaults = defaults
-        if hasattr(controller, 'setup'):
-            controller.setup(schema, form)
         request.controller = controller
         request.schema = schema
         request.form = form

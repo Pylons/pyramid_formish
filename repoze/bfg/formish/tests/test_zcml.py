@@ -8,18 +8,18 @@ class FormDirectiveTests(unittest.TestCase):
     def tearDown(self):
         testing.cleanUp()
         
-    def _makeOne(self, context, schema, controller, **kw):
+    def _makeOne(self, context, controller_factory, **kw):
         from repoze.bfg.formish.zcml import FormDirective
-        return FormDirective(context, schema, controller, **kw)
+        return FormDirective(context, controller_factory, **kw)
 
     def test_after(self):
         import webob
         import schemaish
         context = DummyZCMLContext()
         from repoze.bfg.view import render_view_to_response
-        class DummySchema(schemaish.Structure):
-            title = schemaish.String()
-        directive = self._makeOne(context, DummySchema, DummyController)
+        title = schemaish.String()
+        factory = make_controller_factory(fields=[('title', title)])
+        directive = self._makeOne(context, factory)
         directive._actions = [{'name':'submit','title':'title','validate':True}]
         directive.after()
         self.assertEqual(len(context.ac), 2)
@@ -67,19 +67,18 @@ class ActionDirectiveTests(unittest.TestCase):
         
     
 class TestMakeFormView(unittest.TestCase):
-    def _callFUT(self, action, actions, schema_factory, controller_factory):
+    def _callFUT(self, action, actions, controller_factory):
         from repoze.bfg.formish.zcml import make_form_view
-        return make_form_view(action, actions, schema_factory,
-                              controller_factory)
+        return make_form_view(action, actions, controller_factory)
 
     def test_noname(self):
         import schemaish
         import validatish
-        class DummySchema(schemaish.Structure):
-            title = schemaish.String(validator=validatish.validator.Required())
+        title = schemaish.String(validator=validatish.validator.Required())
         action = {'name':None, 'title':'cancel', 'validate':False}
         actions = [action]
-        view = self._callFUT(action, actions, DummySchema, DummyController)
+        factory = make_controller_factory(fields=[('title', title)])
+        view = self._callFUT(action, actions, factory)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
@@ -88,11 +87,11 @@ class TestMakeFormView(unittest.TestCase):
     def test_novalidate(self):
         import schemaish
         import validatish
-        class DummySchema(schemaish.Structure):
-            title = schemaish.String(validator=validatish.validator.Required())
+        title = schemaish.String(validator=validatish.validator.Required())
         action = {'name':'cancel', 'title':'cancel', 'validate':False}
         actions = [action]
-        view = self._callFUT(action, actions, DummySchema, DummyController)
+        factory = make_controller_factory(fields=[('title', title)])
+        view = self._callFUT(action, actions, factory)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
@@ -101,11 +100,12 @@ class TestMakeFormView(unittest.TestCase):
 
     def test_validate_no_error(self):
         import schemaish
-        class DummySchema(schemaish.Structure):
-            title = schemaish.String()
+        title = schemaish.String()
         action = {'name':'submit', 'title':'submit', 'validate':True}
         actions = [action]
-        view = self._callFUT(action, actions, DummySchema, DummyController)
+        factory = make_controller_factory(fields=[('title', title)],
+                                          defaults={'title':'the title'})
+        view = self._callFUT(action, actions, factory)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
@@ -115,16 +115,16 @@ class TestMakeFormView(unittest.TestCase):
         self.failUnless(request.schema) 
         self.failUnless(request.controller) 
         self.assertEqual(dict(request.form.defaults), {'title':'the title'})
-        self.assertEqual(request.controller.setup_called, True)
 
     def test_validate_form_error(self):
         import schemaish
         import validatish
-        class DummySchema(schemaish.Structure):
-            title = schemaish.String(validator=validatish.validator.Required())
+        title = schemaish.String(validator=validatish.validator.Required())
         action = {'name':'submit', 'title':'submit', 'validate':True}
         actions = [action]
-        view = self._callFUT(action, actions, DummySchema, DummyController)
+        factory = make_controller_factory(fields=[('title', title)],
+                                          defaults={'title':'the title'})
+        view = self._callFUT(action, actions, factory)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
@@ -134,21 +134,20 @@ class TestMakeFormView(unittest.TestCase):
         self.failUnless(request.schema) 
         self.failUnless(request.controller) 
         self.assertEqual(dict(request.form.defaults), {'title':'the title'})
-        self.assertEqual(request.controller.setup_called, True)
         self.failUnless('title' in request.form.errors)
 
     def test_validate_validation_error(self):
         import schemaish
-        import validatish
         from repoze.bfg.formish import ValidationError
-        class DummySchema(schemaish.Structure):
-            title = schemaish.String()
+        title = schemaish.String()
         action = {'name':'submit', 'title':'submit', 'validate':True}
         actions = [action]
-        view = self._callFUT(action, actions, DummySchema, DummyController)
+        factory = make_controller_factory(fields=[('title', title)],
+                                          exception=ValidationError(title='a'),
+                                          defaults={'title':'the title'})
+        view = self._callFUT(action, actions, factory)
         context = testing.DummyModel()
         request = testing.DummyRequest()
-        request.exception = ValidationError(title='a')
         result = view(context, request)
         self.assertEqual(result, '123')
         self.assertEqual(request.action_name, 'submit')
@@ -156,7 +155,6 @@ class TestMakeFormView(unittest.TestCase):
         self.failUnless(request.schema) 
         self.failUnless(request.controller) 
         self.assertEqual(dict(request.form.defaults), {'title':'the title'})
-        self.assertEqual(request.controller.setup_called, True)
         self.failUnless('title' in request.form.errors)
 
     def test_selfvalidate(self):
@@ -164,17 +162,31 @@ class TestMakeFormView(unittest.TestCase):
         import validatish
         action = {'name':'submit', 'title':'submit', 'validate':True}
         actions = [action]
-        class DummyValidatingController(DummyController):
-            def validate(self):
-                return 'validated'
-        class DummySchema(schemaish.Structure):
-            title = schemaish.String(validator=validatish.validator.Required())
-        view = self._callFUT(action, actions, DummySchema,
-                             DummyValidatingController)
+        title = schemaish.String(validator=validatish.validator.Required())
+        factory = make_controller_factory(selfvalidate=True,
+                                          fields=[('title', title)])
+        view = self._callFUT(action, actions, factory)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, 'validated')
+
+    def test_with_widgets(self):
+        import schemaish
+        import validatish
+        import formish
+        title = schemaish.String(validator=validatish.validator.Required())
+        action = {'name':None, 'title':'cancel', 'validate':False}
+        actions = [action]
+        titlewidget = formish.Input()
+        factory = make_controller_factory(fields=[('title', title)],
+                                          widgets={'title':titlewidget})
+        view = self._callFUT(action, actions, factory)
+        context = testing.DummyModel()
+        request = testing.DummyRequest()
+        result = view(context, request)
+        self.assertEqual(result, '123')
+        
 
 class TestAddTemplatePath(unittest.TestCase):
     def tearDown(self):
@@ -234,19 +246,33 @@ class DummyZCMLContext:
     def resolve(self, package_name):
         return self.resolved
 
-class DummyController:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-    def setup(self, schema, form):
-        self.setup_called = True
-    def __call__(self):
-        return '123'
-    def defaults(self):
-        return {'title':'the title'}
-    def handle_submit(self, converted):
-        if hasattr(self.request, 'exception'):
-            raise self.request.exception
-        return 'submitted'
-    def handle_cancel(self):
-        return 'cancelled'
+def make_controller_factory(fields=(), defaults=None, result='123',
+                            widgets=None, selfvalidate=False, exception=None):
+    class DummyController:
+        def __init__(self, context, request):
+            self.context = context
+            self.request = request
+        def form_fields(self):
+            return fields
+        def form_widgets(self, schema):
+            if widgets is not None:
+                return widgets
+            return {}
+        def __call__(self):
+            return result
+        def form_defaults(self):
+            if defaults is None:
+                return {}
+            return defaults
+        def handle_submit(self, converted):
+            if exception:
+                raise exception
+            return 'submitted'
+        def handle_cancel(self):
+            return 'cancelled'
+        if selfvalidate:
+            def validate(self):
+                return 'validated'
+
+    return DummyController
+
