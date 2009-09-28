@@ -66,10 +66,10 @@ class ActionDirectiveTests(unittest.TestCase):
             [{'validate': False, 'name': 'name', 'title': 'Name'}])
         
     
-class TestMakeFormView(unittest.TestCase):
-    def _callFUT(self, action, actions, controller_factory):
-        from repoze.bfg.formish.zcml import make_form_view
-        return make_form_view(action, actions, controller_factory)
+class TestFormView(unittest.TestCase):
+    def _makeOne(self, controller_factory, action, actions):
+        from repoze.bfg.formish.zcml import FormView
+        return FormView(controller_factory, action, actions)
 
     def test_noname(self):
         import schemaish
@@ -78,7 +78,7 @@ class TestMakeFormView(unittest.TestCase):
         action = {'name':None, 'title':'cancel', 'validate':False}
         actions = [action]
         factory = make_controller_factory(fields=[('title', title)])
-        view = self._callFUT(action, actions, factory)
+        view = self._makeOne(factory, action, actions)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
@@ -91,7 +91,7 @@ class TestMakeFormView(unittest.TestCase):
         action = {'name':'cancel', 'title':'cancel', 'validate':False}
         actions = [action]
         factory = make_controller_factory(fields=[('title', title)])
-        view = self._callFUT(action, actions, factory)
+        view = self._makeOne(factory, action, actions)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
@@ -105,7 +105,7 @@ class TestMakeFormView(unittest.TestCase):
         actions = [action]
         factory = make_controller_factory(fields=[('title', title)],
                                           defaults={'title':'the title'})
-        view = self._callFUT(action, actions, factory)
+        view = self._makeOne(factory, action, actions)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
@@ -127,7 +127,7 @@ class TestMakeFormView(unittest.TestCase):
         actions = [action]
         factory = make_controller_factory(fields=[('title', title)],
                                           defaults={'title':'the title'})
-        view = self._callFUT(action, actions, factory)
+        view = self._makeOne(factory, action, actions)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
@@ -151,7 +151,7 @@ class TestMakeFormView(unittest.TestCase):
         factory = make_controller_factory(fields=[('title', title)],
                                           exception=ValidationError(title='a'),
                                           defaults={'title':'the title'})
-        view = self._callFUT(action, actions, factory)
+        view = self._makeOne(factory, action, actions)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
@@ -174,7 +174,7 @@ class TestMakeFormView(unittest.TestCase):
         title = schemaish.String(validator=validatish.validator.Required())
         factory = make_controller_factory(selfvalidate=True,
                                           fields=[('title', title)])
-        view = self._callFUT(action, actions, factory)
+        view = self._makeOne(factory, action, actions)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
@@ -190,7 +190,7 @@ class TestMakeFormView(unittest.TestCase):
         titlewidget = formish.Input()
         factory = make_controller_factory(fields=[('title', title)],
                                           widgets={'title':titlewidget})
-        view = self._callFUT(action, actions, factory)
+        view = self._makeOne(factory, action, actions)
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)

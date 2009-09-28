@@ -50,7 +50,7 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
     def after(self):
         display_action = {'name':None, 'validate':False, 'title':None}
         for action in [display_action] + self._actions:
-            form_view = make_form_view(action, self._actions, self.controller)
+            form_view = FormView(self.controller, action, self._actions)
             view(self.context,
                  permission=self.permission,
                  for_=self.for_,
@@ -62,13 +62,17 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
                  renderer=self.renderer,
                  wrapper=self.wrapper)
 
-def make_form_view(action, actions, controller_factory):
-    validate = action['validate']
-    form_action = action['name']
-    title = action['title']
-    def form_view(context, request):
-        request.form_action = form_action
-        form_controller = controller_factory(context, request)
+class FormView(object):
+    def __init__(self, controller_factory, action, actions):
+        self.controller_factory = controller_factory
+        self.action = action
+        self.actions = actions
+        self.form_action = action['name']
+        self.validate = action['validate']
+
+    def __call__(self, context, request):
+        form_action = request.form_action = self.form_action
+        form_controller = self.controller_factory(context, request)
         request.form_controller = form_controller
         form_schema = schemaish.Structure()
         request.form_schema = form_schema
@@ -80,7 +84,7 @@ def make_form_view(action, actions, controller_factory):
         request.form_fields = form_fields
         form = Form(form_schema, add_default_action=False)
         request.form = form
-        form_actions = [(a['name'], a['title']) for a in actions]
+        form_actions = [(a['name'], a['title']) for a in self.actions]
         for tup in form_actions:
             form.add_action(*tup)
         request.form_actions = form_actions
@@ -97,7 +101,7 @@ def make_form_view(action, actions, controller_factory):
         request.form_defaults = defaults
         if form_action:
             handler = 'handle_%s' % form_action
-            if validate:
+            if self.validate:
                 if hasattr(form_controller, 'validate'):
                     result = form_controller.validate()
                 else:
@@ -115,7 +119,6 @@ def make_form_view(action, actions, controller_factory):
         else:
             result = form_controller()
         return result
-    return form_view
 
 class IActionDirective(Interface):
     """ The interface for an action subdirective """
