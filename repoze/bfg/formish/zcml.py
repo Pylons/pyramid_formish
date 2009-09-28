@@ -76,48 +76,55 @@ class FormView(object):
         request.form_controller = form_controller
         form_schema = schemaish.Structure()
         request.form_schema = form_schema
+
         form_fields = []
         if hasattr(form_controller, 'form_fields'):
             form_fields = form_controller.form_fields()
             for fieldname, field in form_controller.form_fields():
                 form_schema.add(fieldname, field)
         request.form_fields = form_fields
+
         form = Form(form_schema, add_default_action=False)
         request.form = form
+
         form_actions = [(a['name'], a['title']) for a in self.actions]
         for tup in form_actions:
             form.add_action(*tup)
         request.form_actions = form_actions
+
         form_widgets = []
         if hasattr(form_controller, 'form_widgets'):
             form_widgets = form_controller.form_widgets(form_fields)
             for name, widget in form_widgets.items():
                 form[name].widget = widget
         request.form_widgets = form_widgets
+
         defaults = None
         if hasattr(form_controller, 'form_defaults'):
             defaults = form_controller.form_defaults()
             form.defaults = defaults
         request.form_defaults = defaults
-        if form_action:
-            handler = 'handle_%s' % form_action
-            if self.validate:
-                if hasattr(form_controller, 'validate'):
-                    result = form_controller.validate()
-                else:
-                    try:
-                        converted = form.validate(request,check_form_name=False)
-                        result = getattr(form_controller, handler)(converted)
-                    except validation.FormError, e:
-                        result = form_controller()
-                    except ValidationError, e:
-                        for k, v in e.errors.items():
-                            form.errors[k] = v
-                        result = form_controller()
+
+        if not form_action:
+            return form_controller()
+        
+        handler = 'handle_%s' % form_action
+        if self.validate:
+            if hasattr(form_controller, 'validate'):
+                result = form_controller.validate()
             else:
-                result = getattr(form_controller, handler)()
+                try:
+                    converted = form.validate(request, check_form_name=False)
+                    result = getattr(form_controller, handler)(converted)
+                except validation.FormError, e:
+                    result = form_controller()
+                except ValidationError, e:
+                    for k, v in e.errors.items():
+                        form.errors[k] = v
+                    result = form_controller()
         else:
-            result = form_controller()
+            result = getattr(form_controller, handler)()
+
         return result
 
 class IActionDirective(Interface):
