@@ -362,7 +362,7 @@ should be a Formish :term:`widget`.  For example:
              'description': formish.TextArea(cols=60, rows=10),
              'text':widgets.RichTextWidget(),
              }
-           widgets['tags'] = karlwidgets.TagsAddWidget()
+           widgets['tags'] = widgets.TagsAddWidget()
            schema = dict(fields)
            if 'security_state' in schema:
                security_states = self.workflow.states
