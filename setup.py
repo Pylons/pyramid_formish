@@ -30,6 +30,7 @@ requires = [
     'setuptools',
     'repoze.bfg',
     'formish',
+    'transaction',
     ]
 
 if sys.version_info[:2] < (2,5):
