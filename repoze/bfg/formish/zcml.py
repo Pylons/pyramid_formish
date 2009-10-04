@@ -20,6 +20,8 @@ from repoze.bfg.formish import Form
 from repoze.bfg.formish import ValidationError
 from repoze.bfg.formish import IFormishSearchPath
 
+import transaction
+
 class IFormDirective(Interface):
     controller = GlobalObject(title=u'display', required=True)
     for_ = GlobalObject(title=u'for', required=False)
@@ -77,11 +79,9 @@ class FormView(object):
         form_schema = schemaish.Structure()
         request.form_schema = form_schema
 
-        form_fields = []
-        if hasattr(form_controller, 'form_fields'):
-            form_fields = form_controller.form_fields()
-            for fieldname, field in form_controller.form_fields():
-                form_schema.add(fieldname, field)
+        form_fields = form_controller.form_fields()
+        for fieldname, field in form_controller.form_fields():
+            form_schema.add(fieldname, field)
         request.form_fields = form_fields
 
         form = Form(form_schema, add_default_action=False)
@@ -117,8 +117,10 @@ class FormView(object):
                     converted = form.validate(request, check_form_name=False)
                     result = getattr(form_controller, handler)(converted)
                 except validation.FormError, e:
+                    transaction.abort()
                     result = form_controller()
                 except ValidationError, e:
+                    transaction.abort()
                     for k, v in e.errors.items():
                         form.errors[k] = v
                     result = form_controller()
