@@ -55,6 +55,12 @@ referring to the form controller class:
      renderer="templates/form_template.pt"
      controller=".forms.AddCommunityController"/>
 
+The above example assumes that there is a ``forms`` module which lives
+in the same directory as the ``configure.zcml`` of your application,
+and that it contains a form controller class named
+``AddCommunityCommunityController``.  The ``controller`` attribute
+names a *controller* for this form definition.  
+
 The ``for``, ``name``, and ``renderer`` attributes of a
 ``formish:form`` tag mirror the meaning of the meanings of these names
 in :mod:`repoze.bfg` ``view`` ZCML directive.  ``for`` represents the
@@ -65,12 +71,6 @@ is first presented, or redisplay the form with errors when form
 validation fails.  The template is either a BFG "resource
 specification" or an absolute or ZCML-package-relative path to an
 on-disk template.
-
-The above example assumes that there is a ``forms`` module which lives
-in the same directory as the ``configure.zcml`` of your application,
-and that it contains a form controller class named
-``AddCommunityCommunityController``.  The ``controller`` attribute
-names a *controller* for this form definition.  
 
 Actions
 -------
@@ -122,7 +122,7 @@ definition).
 Form Controllers
 ----------------
 
-A *form controller* is a class which has the following
+A *form controller* is a Python class which has the following
 responsibilities:
 
 - Provide the *default values* for the form's fields.
@@ -133,11 +133,21 @@ responsibilities:
 
 - Provide a *display method* for the form.
 
-- Provide one or more *handlers* for the form's actions after
-  succesful validation.
+- Provide one or more *handlers* for the form's actions that are
+  invoked by :mod:`repoze.bfg.formish` after succesful validation.
 
 A form controller may also (but commonly does not) provide a method
 that does custom validation of a form submission.
+
+Each responsibility of a form controller is fulfilled by a *method* of
+the form controller.  This is of course not the only way to factor
+this particular problem (for example, it would have been possible to
+have a single method responsible for both returning fields and
+widgets), but the division seems to be the "least worst" way to factor
+the problem.  The division makes the form controller testable; in
+particular, the only *conditions* in form controller methods are pure
+business logic conditions, not "framework meta" conditions (such as
+"is this a POST request?").
 
 Form Controller Constructor
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -159,13 +169,13 @@ context of the view which creates the form controller, and the
            self.workflow = security.get_workflow(context)
 
 The constructor for a form controller is called whenever a request
-that displays or validates a form is handled.  Like a view, a form
-controller's lifecycle is no longer than the lifecycle of a single
+that displays or validates a form is handled.  Like a BFG view, a form
+controller's lifecycle is no longer than the lifecycle of a single BFG
 request.
 
 The imports and associated APIs defined in the examples above and
-below are clearly fictional, but for purposes of example, we'll assume
-that the ``my.package.security`` module offers an API which allows the
+below are fictional, but for purposes of example, we'll assume that
+the ``my.package.security`` module offers an API which allows the
 developer to determine whether a "workflow" is available for the
 current context representing a dynamic set of choices based on the
 current state of the context; furthermore it offers an API to see if
@@ -179,9 +189,10 @@ initialization.
 Providing Field Default Values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``form_defaults`` method of a form controller accepts no
-arguments, and should return a dictionary mapping form field key to
-Python value.
+The form controller provides *default values* to a Formish form via
+its ``form_defaults`` method.  The ``form_defaults`` method of a form
+controller accepts no arguments, and should return a dictionary
+mapping a form field name to a Python value.
 
 .. code-block:: python
    :linenos:
@@ -211,22 +222,23 @@ defaults are associated with the rendered form.
 Providing Fields
 ~~~~~~~~~~~~~~~~
 
-A form controller provides the *fields* of a form via its
+A form controller provides Formish with the *fields* of a form via its
 ``form_fields`` method.  If defined, it must return a sequence of
 two-tuples.  Each tuple in the returned value should be of a certain
-composition.  The first value in the tuple should be a string
-containing the field name.  This should match the name supplied as a
-dictionary key in the ``form_defaults`` method.  The second value in
-the tuple should be a ``schemaish`` Structure object, such as a
-``schemish.String`` or another data type.  These types of objects
-often make use of :term:`validatish` validators.  For example:
+composition: the first value in the tuple should be a string
+containing the field name, the second value should a a
+``schemaish.Structure`` object representing a data type.  The first
+value in the tuple should match the name supplied as a dictionary key
+in the ``form_defaults`` method.  The second value in the tuple should
+be a ``schemaish`` Structure object, such as a ``schemish.String`` or
+another data type.  These types of objects often make use of
+:term:`validatish` validators.  For example:
 
 .. code-block:: python
    :linenos:
 
    from my.package import security
    import schemaish
-   import formish
    from validatish import validator
 
    tags_field = schemaish.Sequence(schemaish.String())
@@ -254,17 +266,6 @@ often make use of :term:`validatish` validators.  For example:
            self.request = request
            self.workflow = security.get_workflow(context)
 
-       def form_defaults(self):
-           defaults = {
-           'title':'',
-           'tags': [], 
-           'description':'',
-           'text':'',
-           }
-           if self.workflow is not None:
-               defaults['security_state']  = self.workflow.initial_state
-           return defaults
-
        def form_fields(self):
            fields = [
               ('title', title_field),
@@ -289,6 +290,12 @@ elements associated with the fields it describes (this is the job of
 If a form controller does not supply a ``form_fields`` method, an
 error is raised.
 
+THe ``schemaish`` package allows you to define a set of fields in a
+*schema*, which is spelled as a Python class definition with
+class-level attributes as named structure objects.  This spelling is
+not directly supported by :mod:`repoze.bfg.formish`, largely
+because it doesn't match the idea of conditional fields very well.
+
 Providing Widgets
 ~~~~~~~~~~~~~~~~~
 
@@ -304,6 +311,202 @@ should be a Formish :term:`widget`.  For example:
 
    from my.package import security
    from my.package import widgets
+
+   import formish
+
+   class AddCommunityFormController(object):
+       def __init__(self, context, request):
+           self.context = context
+           self.request = request
+           self.workflow = security.get_workflow(context)
+
+       def form_widgets(self, fields):
+           widgets = {
+             'title':formish.Input(),
+             'description': formish.TextArea(cols=60, rows=10),
+             'text':widgets.RichTextWidget(),
+             }
+           widgets['tags'] = widgets.TagsAddWidget()
+           schema = dict(fields)
+           if 'security_state' in schema:
+               security_states = self.workflow.states
+               widgets['security_state'] = formish.RadioChoice(
+                   options=[ (s['name'], s['title']) for s in security_states],
+                   none_option=None)
+           return widgets
+
+If the form controller does not supply a ``form_widgets`` method, the
+default Formish widgets for the schema's field types are used.  These
+are defined by the Formish package itself.
+
+Providing a Display Method
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The *display method* of a form controller is its ``__call__`` method.
+The ``__call__`` method accepts no arguments.  It must return either a
+dictionary or a WebOb *response* object.  If the display method
+returns a dictionary, the *renderer* associated with the form
+controller's ZCML ``renderer`` attribute (typically a template) will
+be used to render the dictionary to a response.  Here's an example of
+a form controller with a display method on it.
+
+.. code-block:: python
+   :linenos:
+
+   from my.package import security
+   from my.package import api
+
+   class AddCommunityFormController(object):
+       def __init__(self, context, request):
+           self.context = context
+           self.request = request
+           self.workflow = security.get_workflow(context)
+
+       def __call__(self):
+           api = api.TemplateAPI(self.context, self.request)
+           return {'api':api, 'page_title':'Edit %s' % self.context.title}
+
+If there is no key in in ``request.params`` dictionary which matches
+the ``param`` value of a particular ``formish:action`` associated with
+a form, the ``__call__`` of the controller is called and the form is
+displayed.  Likewise, if a form is submitted, and validation fails,
+the ``__call__`` of the controller is called and the form is
+redisplayed with errors.
+
+For example, if the form we're defining above is invoked with a
+request that has a params dict that has the value ``cancel`` as a key,
+the ``handle_cancel`` method of the ``.forms.AddCommunityController``
+handler will be called after validation is performed.  But if neither
+``submit`` nor ``cancel`` is present in ``request.params``, the
+``__call__`` method of the controller is called, and no validation is
+performed.
+
+If a form controller does not supply a ``__call__`` method, an error
+is raised at form controller display time.
+
+Providing Handlers
+~~~~~~~~~~~~~~~~~~
+
+Each *handler* of a form controller is responsible for returning a
+response or a dictionary.  A *handler* of a form controller is called
+after *validation* is performed successfully for an *action*.  Note
+that these handlers are *not* called when form validation is
+unsuccessful: when form validation is not successful the form display
+method is called and the form is redisplayed with error messages.
+
+Each handler has the method name ``handle_<action_name>``.  If the
+``validate`` flag of a ``formish:action`` tag is ``true`` (the
+default), the associated handler will accept a single argument named
+``converted``.  If the ``validate`` tag is false, it will accept no
+arguments.
+
+For example, the ``cancel`` action of a ``formish:form`` ZCML
+definition for a form controller (which is defined in ZCML as
+``validate="false"`` might be defined as so:
+
+.. code-block:: python
+   :linenos:
+
+   from webob.exc import HTTPFound
+   from repoze.bfg.traversal import model_url
+
+   class AddCommunityFormController(object):
+       def __init__(self, context, request):
+           self.context = context
+           self.request = request
+           self.workflow = security.get_workflow(context)
+
+       def handle_cancel(self):
+           return HTTPFound(location=model_url(self.context, self.request))
+
+A more complex example, which provides the ``submit`` action for the
+form we've been fleshing out so far is as follows (it is
+``validate=true`` by default, so accepts a ``converted`` argument):
+
+.. code-block:: python
+   :linenos:
+
+   from webob.exc import HTTPFound
+   from repoze.bfg.security import authenticated_userid
+   from repoze.bfg.traversal import model_url
+
+   from repoze.lemonade.content import create_content
+   from my.package.interfaces import ICommunity
+
+   class AddCommunityFormController(object):
+       def __init__(self, context, request):
+           self.context = context
+           self.request = request
+           self.workflow = security.get_workflow(context)
+
+       def handle_submit(self, converted):
+           request = self.request
+           context = self.context
+           userid = authenticated_userid(request)
+           community = create_content(ICommunity,
+                                      converted['title'],
+                                      converted['description'],
+                                      converted['text'],
+                                      userid,
+                                      )
+           # required to use moderators_group_name and
+           # members_group_name
+           community.__name__ = converted['title']
+           community.tags = converted['tags']
+           context[name] = community
+
+           if self.workflow is not None:
+               if 'security_state' in converted:
+                   self.workflow.transition_to_state(community, request,
+                                                    converted['security_state'])
+           location = model_url(community, request,
+                                'members', 'add_existing.html',
+                                query={'status_message':'Community added'})
+           return HTTPFound(location=location)
+
+The return value of the above example's handler is a "response" object
+(an object which has the attributes ``app_iter``, ``headerlist`` and
+``status``).  A handler is permitted to return a response or a
+dictionary.  If it returns a dictionary, the ``template`` associated
+with the form is rendered with the result of the dictionary in its
+global namespace.
+
+If a ``handle_<actionname>`` method for a form action does not exist
+on a form controller as necessary, an error is raised at form
+submission time.
+
+A handler may also raise a ``repoze.bfg.formish.ValidationError``
+exception if it detects a post-validation error.  This permits
+"whole-form" validation that requires data that may only be known by
+the handler at runtime.  When a handler raises such an error, the form
+is rerendered with the error present in the rendering.  The error
+should be raised with keyword arguments matching field names that map
+to error messages, e.g.:
+
+.. code-block:: python
+   :linenos:
+
+   from repoze.bfg.formish import ValidationError
+   raise ValidationError(title='Wrong!')
+
+If any validation error is raised, and a :term:`transaction` is in
+play, the transaction is aborted.
+
+A Fully Composed Form Controller
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Here's a fully composed form controller:
+
+.. code-block:: python
+   :linenos:
+
+   from my.package import security
+   from my.package import widgets
+   from my.package import api
+
+   from repoze.bfg.security import authenticated_userid
+   from repoze.bfg.traversal import model_url
+   from webob.exc import HTTPFound
 
    import schemaish
    import formish
@@ -371,206 +574,38 @@ should be a Formish :term:`widget`.  For example:
                    none_option=None)
            return widgets
 
-If the form controller does not supply a ``form_widgets`` method, the
-default Formish widgets for the schema's field types are used.  These
-are defined by the Formish package itself.
-
-Providing a Display Method
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The *display method* of a form controller is its ``__call__`` method.
-The ``__call__`` method accepts no arguments.  It must return either a
-dictionary or a WebOb *response* object.  If the display method
-returns a dictionary, the *renderer* associated with the form
-controller's ZCML statement will be used to render the dictionary to a
-response.  Here's an example of a form controller with a display
-method on it.
-
-.. code-block:: python
-   :linenos:
-
-   from my.package import security
-   from my.package import widgets
-   from my.package import api
-
-   import schemaish
-   import formish
-   from validatish import validator
-
-   tags_field = schemaish.Sequence(schemaish.String())
-
-   description_field = schemaish.String(
-       description=('This description will appear in search results and '
-                    'on the community listing page.  Please limit your '
-                    'description to 100 words or less'),
-       validator=validator.All(validator.Length(max=500),
-                                       validator.Required())
-       )
-
-   text_field =  schemaish.String(
-       description=('This text will appear on the Overview page for this '
-                    'community.  You can use this to describe the '
-                    'community or to make a special announcement.'))
-
-   security_field = schemaish.String(
-       description=('Items marked as private can only be seen by '
-                    'members of this community.'))
-
-   class AddCommunityFormController(object):
-       def __init__(self, context, request):
-           self.context = context
-           self.request = request
-           self.workflow = security.get_workflow(context)
-
-       def form_defaults(self):
-           defaults = {
-           'title':'',
-           'tags': [], 
-           'description':'',
-           'text':'',
-           }
-           if self.workflow is not None:
-               defaults['security_state']  = self.workflow.initial_state
-           return defaults
-
-       def form_fields(self):
-           fields = [
-              ('title', title_field),
-              ('tags', tags_field),
-              ('description', description_field),
-              ('text', text_field),
-              ]
-           if self.workflow is not None and self.workflow.states:
-               fields.append(('security_state', security_field))
-           return fields
-
-       def form_widgets(self, fields):
-           widgets = {
-             'title':formish.Input(),
-             'description': formish.TextArea(cols=60, rows=10),
-             'text':widgets.RichTextWidget(),
-             }
-           widgets['tags'] = karlwidgets.TagsAddWidget()
-           schema = dict(fields)
-           if 'security_state' in schema:
-               security_states = self.workflow.states
-               widgets['security_state'] = formish.RadioChoice(
-                   options=[ (s['name'], s['title']) for s in security_states],
-                   none_option=None)
-           return widgets
-
        def __call__(self):
            api = api.TemplateAPI(self.context, self.request)
            return {'api':api, 'page_title':'Edit %s' % self.context.title}
 
-If there is no key in in ``request.params`` dictionary which matches
-the ``param`` value of a particular ``formish:action`` associated with
-a form, the ``__call__`` of the controller is called and the form is
-displayed.  Likewise, if a form is submitted, and validation fails,
-the ``__call__`` of the controller is called and the form is
-redisplayed with errors.
+       def handle_cancel(self):
+           return HTTPFound(location=model_url(self.context, self.request))
 
-For example, if the form we're defining above is invoked with a
-request that has a params dict that has the value ``cancel`` as a key,
-the ``handle_cancel`` method of the ``.forms.AddCommunityController``
-handler will be called after validation is performed.  But if neither
-``submit`` nor ``cancel`` is present in ``request.params``, the
-``__call__`` method of the controller is called, and no validation is
-performed.
+       def handle_submit(self, converted):
+           request = self.request
+           context = self.context
+           userid = authenticated_userid(request)
+           community = create_content(ICommunity,
+                                      converted['title'],
+                                      converted['description'],
+                                      converted['text'],
+                                      userid,
+                                      )
+           # required to use moderators_group_name and
+           # members_group_name
+           community.__name__ = converted['title']
+           community.tags = converted['tags']
+           context[name] = community
 
-If a form controller does not supply a ``__call__`` method, an error
-is raised.
+           if self.workflow is not None:
+               if 'security_state' in converted:
+                   self.workflow.transition_to_state(community, request,
+                                                    converted['security_state'])
+           location = model_url(community, request,
+                                'members', 'add_existing.html',
+                                query={'status_message':'Community added'})
+           return HTTPFound(location=location)
 
-Providing Handlers
-~~~~~~~~~~~~~~~~~~
-
-Each *handler* of a form controller is responsible for returning a
-response or a dictionary.  A *handler* of a form controller is called
-after *validation* is performed successfully for an *action*.  Note
-that these handlers are *not* called when form validation is
-unsuccessful: when form validation is not successful the form display
-method is called and the form is redisplayed with error messages.
-
-Each handler has the method name ``handle_<action_name>``.  If the
-``validate`` flag of a ``formish:action`` tag is ``true`` (the
-default), the associated handler will accept a single argument named
-``converted``.  If the ``validate`` tag is false, it will accept no
-arguments.
-
-For example, the ``cancel`` action of a ``formish:form`` ZCML
-definition for a form controller (which is defined in ZCML as
-``validate="false"`` might be defined as so:
-
-.. code-block:: python
-   :linenos:
-
-   def handle_cancel(self):
-       from webob.exc import HTTPFound
-       return HTTPFound(location=model_url(self.context, self.request))
-
-A more complex example, which provides the ``submit`` action for the
-form we've been fleshing out so far is as follows (it is
-``validate=true`` by default, so accepts a ``converted`` argument):
-
-.. code-block:: python
-   :linenos:
-
-   def handle_submit(self, converted):
-       from repoze.bfg.security import authenticated_userid
-       from repoze.bfg.traversal import model_url
-       from webob.exc import HTTPFound
-
-       request = self.request
-       context = self.context
-       userid = authenticated_userid(request)
-       community = create_content(ICommunity,
-                                  converted['title'],
-                                  converted['description'],
-                                  converted['text'],
-                                  userid,
-                                  )
-       # required to use moderators_group_name and
-       # members_group_name
-       community.__name__ = converted['title']
-       community.tags = converted['tags']
-       context[name] = community
-
-       if self.workflow is not None:
-           if 'security_state' in converted:
-               self.workflow.transition_to_state(community, request,
-                                                 converted['security_state'])
-       location = model_url(community, request,
-                            'members', 'add_existing.html',
-                            query={'status_message':'Community added'})
-       return HTTPFound(location=location)
-
-The return value of the above example's handler is a "response" object
-(an object which has the attributes ``app_iter``, ``headerlist`` and
-``status``).  A handler is permitted to return a response or a
-dictionary.  If it returns a dictionary, the ``template`` associated
-with the form is rendered with the result of the dictionary in its
-global namespace.
-
-If a ``handle_<actionname>`` method for a form action does not exist
-on a form controller as necessary, an error is raised at form
-submission time.
-
-A handler may also raise a ``repoze.bfg.formish.ValidationError``
-exception if it detects a post-validation error.  This permits
-"whole-form" validation that requires data that may only be known by
-the handler at runtime.  When a handler raises such an error, the form
-is rerendered with the error present in the rendering.  The error
-should be raised with keyword arguments matching field names that map
-to error messages, e.g.:
-
-.. code-block:: python
-   :linenos:
-
-   from repoze.bfg.formish import ValidationError
-   raise ValidationError(title='Wrong!')
-
-If any validation error is raised, and a :term:`transaction` is in
-play, the transaction is aborted.
 
 Indices and tables
 ------------------
