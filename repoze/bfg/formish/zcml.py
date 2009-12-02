@@ -29,13 +29,14 @@ class IFormDirective(Interface):
     containment = GlobalObject(title=u'containment', required=False)
     route_name = TextLine(title=u'route_name', required=False)
     wrapper = TextLine(title = u'wrapper', required=False)
+    form_id = TextLine(title = u'name', required=False)
 
 class FormDirective(zope.configuration.config.GroupingContextDecorator):
     implements(zope.configuration.config.IConfigurationContext,
                IFormDirective)
     def __init__(self, context, controller, for_=None, name='',
                  renderer=None, permission=None, containment=None,
-                 route_name=None, wrapper=None):
+                 route_name=None, wrapper=None, form_id=None):
         self.context = context
         self.controller = controller
         self.for_ = for_
@@ -45,12 +46,14 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
         self.containment = containment
         self.route_name = route_name
         self.wrapper = wrapper
+        self.form_id = form_id
         self._actions = [] # mutated by subdirectives
 
     def after(self):
         display_action = {'name':None, 'validate':False, 'title':None}
         for action in [display_action] + self._actions:
-            form_view = FormView(self.controller, action, self._actions)
+            form_view = FormView(self.controller, action, self._actions,
+                                 self.form_id)
             view(self.context,
                  permission=self.permission,
                  for_=self.for_,
@@ -63,10 +66,11 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
                  wrapper=self.wrapper)
 
 class FormView(object):
-    def __init__(self, controller_factory, action, actions):
+    def __init__(self, controller_factory, action, actions, form_id=None):
         self.controller_factory = controller_factory
         self.action = action
         self.actions = actions
+        self.form_id = form_id
         self.form_action = action['name']
         self.validate = action['validate']
 
@@ -82,7 +86,7 @@ class FormView(object):
             form_schema.add(fieldname, field)
         request.form_fields = form_fields
 
-        form = Form(form_schema, add_default_action=False)
+        form = Form(form_schema, add_default_action=False, name=self.form_id)
         request.form = form
 
         form_actions = [(a['name'], a['title']) for a in self.actions]

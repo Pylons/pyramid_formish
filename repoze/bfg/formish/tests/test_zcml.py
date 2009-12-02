@@ -67,9 +67,9 @@ class ActionDirectiveTests(unittest.TestCase):
         
     
 class TestFormView(unittest.TestCase):
-    def _makeOne(self, controller_factory, action, actions):
+    def _makeOne(self, controller_factory, action, actions, form_id=None):
         from repoze.bfg.formish.zcml import FormView
-        return FormView(controller_factory, action, actions)
+        return FormView(controller_factory, action, actions, form_id=form_id)
 
     def test_noname(self):
         import schemaish
@@ -83,6 +83,10 @@ class TestFormView(unittest.TestCase):
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, '123')
+
+    def test_formid(self):
+        view = self._makeOne(None, {'name':1, 'validate':True}, None, 'default')
+        self.assertEqual(view.form_id, 'default')
 
     def test_novalidate(self):
         import schemaish
