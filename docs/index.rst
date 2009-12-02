@@ -53,7 +53,8 @@ referring to the form controller class:
      for=".models.MyModel"
      name="add_community.html"
      renderer="templates/form_template.pt"
-     controller=".forms.AddCommunityController"/>
+     controller=".forms.AddCommunityController"
+     form_id="theform"/>
 
 The above example assumes that there is a ``forms`` module which lives
 in the same directory as the ``configure.zcml`` of your application,
@@ -71,6 +72,9 @@ is first presented, or redisplay the form with errors when form
 validation fails.  The template is either a BFG "resource
 specification" or an absolute or ZCML-package-relative path to an
 on-disk template.
+
+The ``form_id`` tag represents the HTML ``id`` attribute value that
+the form will use when rendered.
 
 Actions
 -------
