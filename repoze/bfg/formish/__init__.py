@@ -49,7 +49,7 @@ class TemplateLoader(object):
             try:
                 return PageTemplateFile(path, parser=self.parser,
                                         auto_reload=self.auto_reload)
-            except OSError, e:
+            except OSError:
                 self.notexists[path] = True
 
         raise mako.exceptions.TopLevelLookupException(
