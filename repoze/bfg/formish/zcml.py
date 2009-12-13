@@ -50,7 +50,7 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
         self._actions = [] # mutated by subdirectives
 
     def after(self):
-        display_action = {'name':None, 'validate':False, 'title':None}
+        display_action = FormAction(None)
         for action in [display_action] + self._actions:
             form_view = FormView(self.controller, action, self._actions,
                                  self.form_id)
@@ -59,7 +59,7 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
                  for_=self.for_,
                  view=form_view,
                  name=self.name,
-                 request_param=action['name'],
+                 request_param=action.name,
                  route_name=self.route_name,
                  containment=self.containment,
                  renderer=self.renderer,
@@ -71,8 +71,8 @@ class FormView(object):
         self.action = action
         self.actions = actions
         self.form_id = form_id
-        self.form_action = action['name']
-        self.validate = action['validate']
+        self.form_action = action
+        self.form_actions = actions
 
     def __call__(self, context, request):
         form_action = request.form_action = self.form_action
@@ -89,10 +89,10 @@ class FormView(object):
         form = Form(form_schema, add_default_action=False, name=self.form_id)
         request.form = form
 
-        form_actions = [(a['name'], a['title']) for a in self.actions]
-        for tup in form_actions:
-            form.add_action(*tup)
-        request.form_actions = form_actions
+        for action in self.form_actions:
+            form.add_action(action.name, action.title)
+
+        request.form_actions = self.form_actions
 
         form_widgets = []
         if hasattr(form_controller, 'form_widgets'):
@@ -107,11 +107,11 @@ class FormView(object):
             form.defaults = defaults
         request.form_defaults = defaults
 
-        if not form_action:
+        if not form_action.name:
             return form_controller()
 
-        handler = 'handle_%s' % form_action
-        if self.validate:
+        handler = 'handle_%s' % form_action.name
+        if self.form_action.validate:
             if hasattr(form_controller, 'validate'):
                 result = form_controller.validate()
             else:
@@ -139,8 +139,14 @@ def action(context, name, title=None, validate=True):
     append = context.context._actions.append
     if title is None:
         title = name.capitalize()
-    action = {'name':name, 'title':title, 'validate':validate}
+    action = FormAction(name, title, validate)
     append(action)
+
+class FormAction(object):
+    def __init__(self, name, title=None, validate=True):
+        self.name = name
+        self.title = title
+        self.validate = validate
     
 class IAddTemplatePath(Interface):
     """

@@ -15,12 +15,13 @@ class FormDirectiveTests(unittest.TestCase):
     def test_after(self):
         import webob
         import schemaish
-        context = DummyZCMLContext()
         from repoze.bfg.view import render_view_to_response
+        from repoze.bfg.formish.zcml import FormAction
+        context = DummyZCMLContext()
         title = schemaish.String()
         factory = make_controller_factory(fields=[('title', title)])
         directive = self._makeOne(context, factory)
-        directive._actions = [{'name':'submit','title':'title','validate':True}]
+        directive._actions = [FormAction('submit','title',True)]
         directive.after()
         self.assertEqual(len(context.ac), 2)
         for action in context.ac:
@@ -52,19 +53,22 @@ class ActionDirectiveTests(unittest.TestCase):
         context.context = DummyZCMLContext()
         actions = context.context._actions = []
         self._callFUT(context, 'name', title='title', validate=False)
-        self.assertEqual(
-            actions,
-            [{'validate': False, 'name': 'name', 'title': 'title'}])
+        self.assertEqual(len(actions), 1)
+        action = actions[0]
+        self.assertEqual(action.validate, False)
+        self.assertEqual(action.name, 'name')
+        self.assertEqual(action.title, 'title')
     
     def test_without_title(self):
         context = DummyZCMLContext()
         context.context = DummyZCMLContext()
         actions = context.context._actions = []
         self._callFUT(context, 'name', validate=False)
-        self.assertEqual(
-            actions,
-            [{'validate': False, 'name': 'name', 'title': 'Name'}])
-        
+        self.assertEqual(len(actions), 1)
+        action = actions[0]
+        self.assertEqual(action.validate, False)
+        self.assertEqual(action.name, 'name')
+        self.assertEqual(action.title, 'Name')
     
 class TestFormView(unittest.TestCase):
     def _makeOne(self, controller_factory, action, actions, form_id=None):
@@ -75,7 +79,8 @@ class TestFormView(unittest.TestCase):
         import schemaish
         import validatish
         title = schemaish.String(validator=validatish.validator.Required())
-        action = {'name':None, 'title':'cancel', 'validate':False}
+        from repoze.bfg.formish.zcml import FormAction
+        action = FormAction(None, 'cancel', False)
         actions = [action]
         factory = make_controller_factory(fields=[('title', title)])
         view = self._makeOne(factory, action, actions)
@@ -91,8 +96,9 @@ class TestFormView(unittest.TestCase):
     def test_novalidate(self):
         import schemaish
         import validatish
+        from repoze.bfg.formish.zcml import FormAction
         title = schemaish.String(validator=validatish.validator.Required())
-        action = {'name':'cancel', 'title':'cancel', 'validate':False}
+        action = FormAction('cancel', 'cancel', False)
         actions = [action]
         factory = make_controller_factory(fields=[('title', title)])
         view = self._makeOne(factory, action, actions)
@@ -100,12 +106,13 @@ class TestFormView(unittest.TestCase):
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, 'cancelled')
-        self.assertEqual(request.form_action, 'cancel')
+        self.assertEqual(request.form_action.name, 'cancel')
 
     def test_validate_no_error(self):
         import schemaish
+        from repoze.bfg.formish.zcml import FormAction
         title = schemaish.String()
-        action = {'name':'submit', 'title':'submit', 'validate':True}
+        action = FormAction('submit', 'submit', True)
         actions = [action]
         factory = make_controller_factory(fields=[('title', title)],
                                           defaults={'title':'the title'})
@@ -114,7 +121,7 @@ class TestFormView(unittest.TestCase):
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, 'submitted')
-        self.assertEqual(request.form_action, 'submit')
+        self.assertEqual(request.form_action.name, 'submit')
         self.failUnless(request.form)
         self.failUnless(request.form_controller) 
         self.failUnless(request.form_defaults)
@@ -126,8 +133,9 @@ class TestFormView(unittest.TestCase):
     def test_validate_form_error(self):
         import schemaish
         import validatish
+        from repoze.bfg.formish.zcml import FormAction
         title = schemaish.String(validator=validatish.validator.Required())
-        action = {'name':'submit', 'title':'submit', 'validate':True}
+        action = FormAction('submit', 'submit', True)
         actions = [action]
         factory = make_controller_factory(fields=[('title', title)],
                                           defaults={'title':'the title'})
@@ -136,7 +144,7 @@ class TestFormView(unittest.TestCase):
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, '123')
-        self.assertEqual(request.form_action, 'submit')
+        self.assertEqual(request.form_action.name, 'submit')
         self.failUnless(request.form)
         self.failUnless(request.form_controller) 
         self.failUnless(request.form_defaults)
@@ -149,8 +157,9 @@ class TestFormView(unittest.TestCase):
     def test_validate_validation_error(self):
         import schemaish
         from repoze.bfg.formish import ValidationError
+        from repoze.bfg.formish.zcml import FormAction
         title = schemaish.String()
-        action = {'name':'submit', 'title':'submit', 'validate':True}
+        action = FormAction('submit', 'submit', True)
         actions = [action]
         factory = make_controller_factory(fields=[('title', title)],
                                           exception=ValidationError(title='a'),
@@ -160,7 +169,7 @@ class TestFormView(unittest.TestCase):
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, '123')
-        self.assertEqual(request.form_action, 'submit')
+        self.assertEqual(request.form_action.name, 'submit')
         self.failUnless(request.form)
         self.failUnless(request.form_controller) 
         self.failUnless(request.form_defaults)
@@ -173,7 +182,9 @@ class TestFormView(unittest.TestCase):
     def test_selfvalidate(self):
         import schemaish
         import validatish
-        action = {'name':'submit', 'title':'submit', 'validate':True}
+        from repoze.bfg.formish.zcml import FormAction
+        title = schemaish.String()
+        action = FormAction('submit', 'submit', True)
         actions = [action]
         title = schemaish.String(validator=validatish.validator.Required())
         factory = make_controller_factory(selfvalidate=True,
@@ -188,8 +199,9 @@ class TestFormView(unittest.TestCase):
         import schemaish
         import validatish
         import formish
+        from repoze.bfg.formish.zcml import FormAction
+        action = FormAction(None, 'cancel', False)
         title = schemaish.String(validator=validatish.validator.Required())
-        action = {'name':None, 'title':'cancel', 'validate':False}
         actions = [action]
         titlewidget = formish.Input()
         factory = make_controller_factory(fields=[('title', title)],
@@ -199,7 +211,6 @@ class TestFormView(unittest.TestCase):
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, '123')
-        
 
 class TestAddTemplatePath(unittest.TestCase):
     def tearDown(self):
