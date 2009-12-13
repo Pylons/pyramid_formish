@@ -117,7 +117,10 @@ class FormView(object):
             else:
                 try:
                     converted = form.validate(request, check_form_name=False)
-                    result = getattr(form_controller, handler)(converted)
+                    if action.success:
+                        result = action.success(form_controller, converted)
+                    else:
+                        result = getattr(form_controller, handler)(converted)
                 except validation.FormError, e:
                     result = form_controller()
                 except ValidationError, e:
@@ -134,19 +137,21 @@ class IActionDirective(Interface):
     name = TextLine(title=u'name', required=True)
     title = TextLine(title=u'title', required=False)
     validate = Bool(title=u'validate', required=False, default=True)
+    success = GlobalObject(title=u'success', required=False)
 
-def action(context, name, title=None, validate=True):
+def action(context, name, title=None, validate=True, success=None):
     append = context.context._actions.append
     if title is None:
         title = name.capitalize()
-    action = FormAction(name, title, validate)
+    action = FormAction(name, title, validate, success)
     append(action)
 
 class FormAction(object):
-    def __init__(self, name, title=None, validate=True):
+    def __init__(self, name, title=None, validate=True, success=None):
         self.name = name
         self.title = title
         self.validate = validate
+        self.success = success
     
 class IAddTemplatePath(Interface):
     """

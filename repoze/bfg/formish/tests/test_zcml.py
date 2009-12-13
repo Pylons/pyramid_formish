@@ -108,6 +108,26 @@ class TestFormView(unittest.TestCase):
         self.assertEqual(result, 'cancelled')
         self.assertEqual(request.form_action.name, 'cancel')
 
+    def test_with_actionsuccess(self):
+        import schemaish
+        from repoze.bfg.formish.zcml import FormAction
+        title = schemaish.String()
+        L = []
+        def success(controller, converted):
+            L.append(converted)
+            return 'success'
+        action = FormAction('submit', 'submit', True, success)
+        actions = [action]
+        factory = make_controller_factory(fields=[('title', title)],
+                                          defaults={'title':'the title'})
+        view = self._makeOne(factory, action, actions)
+        context = testing.DummyModel()
+        request = testing.DummyRequest()
+        result = view(context, request)
+        self.assertEqual(result, 'success')
+        self.assertEqual(request.form_action.name, 'submit')
+        self.assertEqual(L, [{'title':None}])
+
     def test_validate_no_error(self):
         import schemaish
         from repoze.bfg.formish.zcml import FormAction
