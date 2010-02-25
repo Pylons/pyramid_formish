@@ -13,7 +13,7 @@ class FormDirectiveTests(unittest.TestCase):
         return FormDirective(context, controller_factory, **kw)
 
     def test_after(self):
-        import webob
+        import webob.multidict
         import schemaish
         from repoze.bfg.view import render_view_to_response
         from repoze.bfg.formish.zcml import FormAction
@@ -32,7 +32,7 @@ class FormDirectiveTests(unittest.TestCase):
         self.assertEqual(display, '123')
 
         request = testing.DummyRequest()
-        request.params = webob.MultiDict()
+        request.params = webob.multidict.MultiDict()
         request.params['submit'] = True
         display = render_view_to_response(None, request, '')
         self.assertEqual(display, 'submitted')
@@ -282,6 +282,7 @@ class TestAddTemplatePath(unittest.TestCase):
         
 class DummyZCMLContext:
     info = None
+    package = ''
     def __init__(self, resolved=None):
         self.resolved = resolved
         self.ac =[]
