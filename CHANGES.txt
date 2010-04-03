@@ -1,6 +1,11 @@
 repoze.bfg.formish
 ==================
 
+Next release
+------------
+
+- Make template renderer use utf-8 encoding by default.
+
 0.1 (2008-12-18)
 ----------------
 

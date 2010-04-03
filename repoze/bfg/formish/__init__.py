@@ -48,7 +48,8 @@ class TemplateLoader(object):
                     "Can not find template %s" % filename)
             try:
                 return PageTemplateFile(path, parser=self.parser,
-                                        auto_reload=self.auto_reload)
+                                        auto_reload=self.auto_reload,
+                                        encoding='utf-8')
             except OSError:
                 self.notexists[path] = True
 
