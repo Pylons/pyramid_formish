@@ -37,15 +37,15 @@ master_doc = 'index'
 
 # General substitutions.
 project = 'repoze.bfg.formish'
-copyright = '2009, Repoze Developers <repoze-dev@lists.repoze.org>'
+copyright = '2010, Repoze Developers <repoze-dev@lists.repoze.org>'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
 #
 # The short X.Y version.
-version = '0.1'
+version = '0.2'
 # The full version, including alpha/beta/rc tags.
-release = '0.1'
+release = version
 
 # There are two options for replacing |today|: either, you set today to
 # some non-false value, then it is used:
