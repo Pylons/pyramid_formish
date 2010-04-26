@@ -1,5 +1,5 @@
-Documentation for repoze.bfg.formish
-====================================
+repoze.bfg.formish
+==================
 
 :mod:`repoze.bfg.formish` is a package which provides
 :mod:`repoze.bfg` bindings for the :term:`Formish` package, which is
@@ -328,7 +328,7 @@ a form controller.  The ``form_widgets`` method accepts a list of
 fields (this is really just the return value of the ``form_fields``
 method of your form controller), and should return a dictionary.  Each
 of the keys in the dictionary should be a field name, and the value
-should be a Formish :term:`widget`.  For example:
+should be a Formish widget.  For example:
 
 .. code-block:: python
    :linenos:
@@ -513,9 +513,6 @@ to error messages, e.g.:
    from repoze.bfg.formish import ValidationError
    raise ValidationError(title='Wrong!')
 
-If any validation error is raised, and a :term:`transaction` is in
-play, the transaction is aborted.
-
 A Fully Composed Form Controller
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -680,7 +677,7 @@ ZCML tags.  For example:
 
      </formish:form>
 
-  </formish:forms>
+   </formish:forms>
 
 Assuming the below template is used as
 ``templates/forms_template.pt``:
@@ -747,6 +744,11 @@ the same way as they do when multiple forms are not involved.
 
 Indices and tables
 ------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   glossary
 
 * :ref:`genindex`
 * :ref:`modindex`
