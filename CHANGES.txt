@@ -1,6 +1,11 @@
 repoze.bfg.formish
 ==================
 
+Next release
+------------
+
+- Made docs render.
+
 0.2 (2010-04-26)
 ----------------
 
