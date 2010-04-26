@@ -19,6 +19,18 @@ from repoze.bfg.zcml import view
 from repoze.bfg.formish import Form
 from repoze.bfg.formish import ValidationError
 from repoze.bfg.formish import IFormishSearchPath
+from repoze.bfg.configuration import Configurator
+from repoze.bfg.threadlocal import get_current_registry
+
+class IFormsDirective(Interface):
+    view = GlobalObject(title=u'view', required=False)
+    for_ = GlobalObject(title=u'for', required=False)
+    name = TextLine(title=u'name', required=False)
+    renderer = TextLine(title=u'renderer (template)', required=False)
+    permission = TextLine(title=u'permission', required=False)
+    containment = GlobalObject(title=u'containment', required=False)
+    route_name = TextLine(title=u'route_name', required=False)
+    wrapper = TextLine(title = u'wrapper', required=False)
 
 class IFormDirective(Interface):
     controller = GlobalObject(title=u'display', required=True)
@@ -30,6 +42,68 @@ class IFormDirective(Interface):
     route_name = TextLine(title=u'route_name', required=False)
     wrapper = TextLine(title = u'wrapper', required=False)
     form_id = TextLine(title = u'name', required=False)
+
+class IFormInsideFormsDirective(Interface):
+    controller = GlobalObject(title=u'display', required=True)
+    form_id = TextLine(title = u'name', required=True)
+
+class FormsDirective(zope.configuration.config.GroupingContextDecorator):
+    implements(zope.configuration.config.IConfigurationContext,
+               IFormsDirective)
+
+    def __init__(self, context, view=None, for_=None, name='', renderer=None,
+                 permission=None, containment=None, route_name=None,
+                 wrapper=None):
+        self.context = context
+        self.view = view
+        self.for_ = for_
+        self.name = name
+        self.renderer = renderer
+        self.permission = permission
+        self.containment = containment
+        self.route_name = route_name
+        self.wrapper = wrapper
+        self.forms = []
+
+    def after(self):
+        reg = get_current_registry()
+        config = Configurator(reg, package=self.context.package)
+        derived_view = config._derive_view(self.view) # XXX using a non-API
+
+        def forms_view(context, request):
+            forms = []
+            for formdef in self.forms:
+                formid = formdef.form_id
+                actions = formdef._actions
+                controller = formdef.controller(context, request)
+                form = form_from_controller(controller, formid, actions)
+                form.controller = controller
+                form.bfg_actions = actions
+                forms.append((formid, form))
+
+            request.forms = [ x[1] for x in forms ]
+            request_formid = request.params.get('__formish_form__')
+
+            for formid, form in forms:
+                if formid == request_formid:
+                    for action in form.bfg_actions:
+                        if action.name in request.params:
+                            def curried_view():
+                                return derived_view(context, request)
+                            return submitted(request, form, form.controller,
+                                             action, curried_view)
+
+            return derived_view(context, request)
+
+        view(self,
+             permission=self.permission,
+             for_=self.for_,
+             view=forms_view,
+             name=self.name,
+             route_name=self.route_name,
+             containment=self.containment,
+             renderer=self.renderer,
+             wrapper=self.wrapper)
 
 class FormDirective(zope.configuration.config.GroupingContextDecorator):
     implements(zope.configuration.config.IConfigurationContext,
@@ -50,11 +124,16 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
         self._actions = [] # mutated by subdirectives
 
     def after(self):
+        if getattr(self.context, 'forms', None) is not None:
+            self.context.forms.append(self)
+            return
+        
         display_action = FormAction(None)
         for action in [display_action] + self._actions:
             form_view = FormView(self.controller, action, self._actions,
                                  self.form_id)
-            view(self.context,
+
+            view(self,
                  permission=self.permission,
                  for_=self.for_,
                  view=form_view,
@@ -71,66 +150,66 @@ class FormView(object):
         self.action = action
         self.actions = actions
         self.form_id = form_id
-        self.form_action = action
-        self.form_actions = actions
 
     def __call__(self, context, request):
-        form_action = request.form_action = self.form_action
-        form_controller = self.controller_factory(context, request)
-        request.form_controller = form_controller
-        form_schema = schemaish.Structure()
-        request.form_schema = form_schema
-
-        form_fields = form_controller.form_fields()
-        for fieldname, field in form_controller.form_fields():
-            form_schema.add(fieldname, field)
-        request.form_fields = form_fields
-
-        form = Form(form_schema, add_default_action=False, name=self.form_id)
+        controller = self.controller_factory(context, request)
+        form = form_from_controller(controller, self.form_id, self.actions)
         request.form = form
 
-        for action in self.form_actions:
-            form.add_action(action.name, action.title)
+        if not self.action.name:
+            # GET view
+            return controller()
 
-        request.form_actions = self.form_actions
+        # the result of a form submission
+        return submitted(request, form, controller, self.action, controller)
 
-        form_widgets = []
-        if hasattr(form_controller, 'form_widgets'):
-            form_widgets = form_controller.form_widgets(form_fields)
-            for name, widget in form_widgets.items():
-                form[name].widget = widget
-        request.form_widgets = form_widgets
+def form_from_controller(controller, form_id, actions=()):
+    form_schema = schemaish.Structure()
 
-        defaults = None
-        if hasattr(form_controller, 'form_defaults'):
-            defaults = form_controller.form_defaults()
-            form.defaults = defaults
-        request.form_defaults = defaults
+    form_fields = controller.form_fields()
+    for fieldname, field in controller.form_fields():
+        form_schema.add(fieldname, field)
+    form = Form(form_schema, name=form_id, add_default_action=False)
+    form.controller = controller
 
-        if not form_action.name:
-            return form_controller()
+    for action in actions:
+        form.add_action(action.name, action.title)
 
-        handler = 'handle_%s' % form_action.name
-        if self.form_action.validate:
-            if hasattr(form_controller, 'validate'):
-                result = form_controller.validate()
-            else:
-                try:
-                    converted = form.validate(request, check_form_name=False)
-                    if action.success:
-                        result = action.success(form_controller, converted)
-                    else:
-                        result = getattr(form_controller, handler)(converted)
-                except validation.FormError, e:
-                    result = form_controller()
-                except ValidationError, e:
-                    for k, v in e.errors.items():
-                        form.errors[k] = v
-                    result = form_controller()
+    form_widgets = []
+    if hasattr(controller, 'form_widgets'):
+        form_widgets = controller.form_widgets(form_fields)
+        for name, widget in form_widgets.items():
+            form[name].widget = widget
+
+    defaults = None
+    if hasattr(controller, 'form_defaults'):
+        defaults = controller.form_defaults()
+        form.defaults = defaults
+
+    return form
+
+def submitted(request, form, controller, action, view):
+    handler = 'handle_%s' % action.name
+    if action.validate:
+        if hasattr(controller, 'validate'):
+            result = controller.validate()
         else:
-            result = getattr(form_controller, handler)()
+            try:
+                converted = form.validate(request, check_form_name=False)
+                if action.success:
+                    result = action.success(controller, converted)
+                else:
+                    result = getattr(controller, handler)(converted)
+            except validation.FormError, e:
+                result = view()
+            except ValidationError, e:
+                for k, v in e.errors.items():
+                    form.errors[k] = v
+                result = view()
+    else:
+        result = getattr(controller, handler)()
 
-        return result
+    return result
 
 class IActionDirective(Interface):
     """ The interface for an action subdirective """

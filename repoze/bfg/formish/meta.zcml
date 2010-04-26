@@ -2,12 +2,35 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:meta="http://namespaces.zope.org/meta">
 
+  <!-- forms directive at top level; contains "form" directives -->
+
+  <meta:groupingDirective
+      name="forms"
+      namespace="http://namespaces.repoze.org/formish"
+      schema="repoze.bfg.formish.zcml.IFormsDirective"
+      handler="repoze.bfg.formish.zcml.FormsDirective"
+      />
+
+  <!-- form directive used in forms directive -->
+
+  <meta:groupingDirective
+      name="form"
+      namespace="http://namespaces.repoze.org/formish"
+      usedIn="repoze.bfg.formish.zcml.IFormsDirective"
+      schema="repoze.bfg.formish.zcml.IFormInsideFormsDirective"
+      handler="repoze.bfg.formish.zcml.FormDirective"
+      />
+
+  <!-- form directive at top level -->
+
   <meta:groupingDirective
       name="form"
       namespace="http://namespaces.repoze.org/formish"
       schema="repoze.bfg.formish.zcml.IFormDirective"
       handler="repoze.bfg.formish.zcml.FormDirective"
       />
+
+  <!-- action directive used as subdirective of "form" and "forms->form" -->
 
   <meta:directive
       name="action"
@@ -16,6 +39,8 @@
       schema="repoze.bfg.formish.zcml.IActionDirective"
       handler="repoze.bfg.formish.zcml.action"
       />
+
+  <!-- add_template_path directive -->
 
   <meta:directive
       name="add_template_path"

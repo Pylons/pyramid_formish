@@ -6,6 +6,20 @@ Next release
 
 - Make template renderer use utf-8 encoding by default.
 
+- The following names are no longer available as attributes of the
+  request object in a form rendering::
+
+    request.form_defaults
+    request.form_schema
+    request.form_fields
+    request.form_actions
+    request.form_widgets
+    request.form_action
+    request.form_controller
+
+- It is now possible to render multiple forms per page using a
+  ``<formish:forms>`` directive (see documentation).
+
 0.1 (2008-12-18)
 ----------------
 

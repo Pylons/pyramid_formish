@@ -1,4 +1,5 @@
-repoze.atemplate README
-=======================
+repoze.bfg.formish README
+=========================
 
-Please see docs/index.rst for the documentation.
+Please see the "docs" directory in this package for documentation.
+

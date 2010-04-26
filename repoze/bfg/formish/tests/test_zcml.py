@@ -1,6 +1,69 @@
 import unittest
 from repoze.bfg import testing
 
+class FormsDirectiveTests(unittest.TestCase):
+    def setUp(self):
+        testing.cleanUp()
+
+    def tearDown(self):
+        testing.cleanUp()
+        
+    def _makeOne(self, context, **kw):
+        from repoze.bfg.formish.zcml import FormsDirective
+        return FormsDirective(context, **kw)
+
+    def test_after_render_view(self):
+        from repoze.bfg.view import render_view_to_response
+        def view(context, request):
+            return 'response'
+        context = DummyZCMLContext()
+        directive = self._makeOne(context, view=view)
+        directive.forms = [DummyFormDirective()]
+        directive.actions = []
+        directive.after()
+        for discrim, action in directive.actions:
+            action()
+        request = testing.DummyRequest()
+        display = render_view_to_response(None, request, '')
+        self.assertEqual(display, 'response')
+        self.assertEqual(len(request.forms), 1)
+
+    def test_after_render_controller_submission(self):
+        from repoze.bfg.view import render_view_to_response
+        context = DummyZCMLContext()
+        directive = self._makeOne(context, view=None)
+        directive.forms = [DummyFormDirective()]
+        directive.actions = []
+        directive.after()
+        for discrim, action in directive.actions:
+            action()
+        request = testing.DummyRequest()
+        request.params = {'__formish_form__':'form_id', 'submit':True}
+        display = render_view_to_response(None, request, '')
+        self.assertEqual(display, 'submitted')
+        self.assertEqual(len(request.forms), 1)
+
+    def test_after_render_controller_curriedview(self):
+        def view(context, request):
+            return 'response'
+        from repoze.bfg.formish import ValidationError
+        from repoze.bfg.view import render_view_to_response
+        context = DummyZCMLContext()
+        directive = self._makeOne(context, view=view)
+        formdirective = DummyFormDirective()
+        formdirective.controller = make_controller_factory(
+            exception=ValidationError)
+        directive.forms = [formdirective]
+        directive.actions = []
+        directive.after()
+        for discrim, action in directive.actions:
+            action()
+        request = testing.DummyRequest()
+        request.params = {'__formish_form__':'form_id', 'submit':True}
+        display = render_view_to_response(None, request, '')
+        self.assertEqual(display, 'response')
+        self.assertEqual(len(request.forms), 1)
+
 class FormDirectiveTests(unittest.TestCase):
     def setUp(self):
         testing.cleanUp()
@@ -12,7 +75,7 @@ class FormDirectiveTests(unittest.TestCase):
         from repoze.bfg.formish.zcml import FormDirective
         return FormDirective(context, controller_factory, **kw)
 
-    def test_after(self):
+    def test_after_outside_forms_context(self):
         import webob.multidict
         import schemaish
         from repoze.bfg.view import render_view_to_response
@@ -21,11 +84,11 @@ class FormDirectiveTests(unittest.TestCase):
         title = schemaish.String()
         factory = make_controller_factory(fields=[('title', title)])
         directive = self._makeOne(context, factory)
+        directive.actions = []
         directive._actions = [FormAction('submit','title',True)]
         directive.after()
-        self.assertEqual(len(context.ac), 2)
-        for action in context.ac:
-            action['callable']()
+        for discriminator, action in directive.actions:
+            action()
 
         request = testing.DummyRequest()
         display = render_view_to_response(None, request, '')
@@ -36,6 +99,13 @@ class FormDirectiveTests(unittest.TestCase):
         request.params['submit'] = True
         display = render_view_to_response(None, request, '')
         self.assertEqual(display, 'submitted')
+
+    def test_after_in_forms_context(self):
+        context = DummyZCMLContext()
+        context.forms = []
+        directive = self._makeOne(context, None)
+        directive.after()
+        self.assertEqual(context.forms[0], directive)
 
 class ActionDirectiveTests(unittest.TestCase):
     def setUp(self):
@@ -106,7 +176,6 @@ class TestFormView(unittest.TestCase):
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, 'cancelled')
-        self.assertEqual(request.form_action.name, 'cancel')
 
     def test_with_actionsuccess(self):
         import schemaish
@@ -125,7 +194,6 @@ class TestFormView(unittest.TestCase):
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, 'success')
-        self.assertEqual(request.form_action.name, 'submit')
         self.assertEqual(L, [{'title':None}])
 
     def test_validate_no_error(self):
@@ -141,13 +209,7 @@ class TestFormView(unittest.TestCase):
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, 'submitted')
-        self.assertEqual(request.form_action.name, 'submit')
         self.failUnless(request.form)
-        self.failUnless(request.form_controller) 
-        self.failUnless(request.form_defaults)
-        self.failUnless(request.form_schema)
-        self.failUnless(request.form_fields)
-        self.failUnless(request.form_actions)
         self.assertEqual(dict(request.form.defaults), {'title':'the title'})
 
     def test_validate_form_error(self):
@@ -164,13 +226,7 @@ class TestFormView(unittest.TestCase):
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, '123')
-        self.assertEqual(request.form_action.name, 'submit')
         self.failUnless(request.form)
-        self.failUnless(request.form_controller) 
-        self.failUnless(request.form_defaults)
-        self.failUnless(request.form_schema)
-        self.failUnless(request.form_fields)
-        self.failUnless(request.form_actions)
         self.assertEqual(dict(request.form.defaults), {'title':'the title'})
         self.failUnless('title' in request.form.errors)
 
@@ -189,13 +245,7 @@ class TestFormView(unittest.TestCase):
         request = testing.DummyRequest()
         result = view(context, request)
         self.assertEqual(result, '123')
-        self.assertEqual(request.form_action.name, 'submit')
         self.failUnless(request.form)
-        self.failUnless(request.form_controller) 
-        self.failUnless(request.form_defaults)
-        self.failUnless(request.form_schema)
-        self.failUnless(request.form_fields)
-        self.failUnless(request.form_actions)
         self.assertEqual(dict(request.form.defaults), {'title':'the title'})
         self.failUnless('title' in request.form.errors)
 
@@ -321,3 +371,17 @@ def make_controller_factory(fields=(), defaults=None, result='123',
 
     return DummyController
 
+class DummyFormDirective(object):
+    def __init__(self):
+        self.form_id = 'form_id'
+        self._actions = [DummyAction()]
+        self.controller = make_controller_factory()
+
+class DummyAction(object):
+    name = 'submit'
+    title = 'Submit'
+    validate = True
+    success = False
+    
+    
+    

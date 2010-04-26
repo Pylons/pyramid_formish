@@ -22,6 +22,10 @@ This package provides:
 - A ``formish:form`` ZCML directive which can be used to configure a
   :mod:`repoze.bfg.formish` "form controller".
 
+- A ``formish:forms`` ZCML directive which can be used to configure a
+  collection of :mod:`repoze.bfg.formish` "form controllers" to be
+  able to render them in the same HTML page.
+
 ``formish:form`` ZCML Directive
 -------------------------------
 
@@ -76,6 +80,22 @@ on-disk template.
 The ``form_id`` tag represents the HTML ``id`` attribute value that
 the form will use when rendered.
 
+The template in ``templates/form_template.pt`` might look something
+like this:
+
+.. code-block:: xml
+   :linenos:
+
+   <html>
+   <head><title>My page</title></head>
+   <body>
+     <span tal:replace="request.form()"/>
+   </body>
+   </html>
+
+A callable which renders the HTML for the form will be provided as the
+``request.form`` attribute within the template.
+
 Actions
 -------
 
@@ -88,7 +108,7 @@ names a *handler*, a *param*, and a *title*.  For example:
    <formish:form
      for=".models.MyModel"
      name="add_community.html"
-     template="templates/form_template.pt"
+     renderer="templates/form_template.pt"
      controller=".forms.AddCommunityController">
 
      <formish:action
@@ -610,6 +630,120 @@ Here's a fully composed form controller:
                                 query={'status_message':'Community added'})
            return HTTPFound(location=location)
 
+Using Multiple Forms Per Page
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can render multiple forms per page by using the
+``<formish:forms>`` ZCML tag to surround a set of ``<formish:form>``
+ZCML tags.  For example:
+
+.. code-block:: xml
+   :linenos:
+
+   <formish:forms
+     view=".views.multiforms_view"
+     for=".models.MyModel"
+     renderer="templates/forms_template.pt"
+     name="add_community.html">
+
+     <formish:form
+       controller=".forms.AddCommunityController"
+       form_id="add_community">
+
+       <formish:action
+         name="submit"
+         title="Submit"
+         />
+
+       <formish:action
+         name="cancel"
+         title="Cancel"
+         validate="false"
+         />
+
+     </formish:form>
+
+     <formish:form
+       controller=".forms.AddCommentController"
+       form_id="add_comment">
+
+       <formish:action
+         name="submit"
+         title="Submit"
+         />
+
+       <formish:action
+         name="cancel"
+         title="Cancel"
+         validate="false"
+         />
+
+     </formish:form>
+
+  </formish:forms>
+
+Assuming the below template is used as
+``templates/forms_template.pt``:
+
+.. code-block:: xml
+   :linenos:
+
+   <html>
+   <head><title>My page</title></head>
+   <body>
+     <span tal:repeat="form request.forms" tal:replace="form()"/>
+   </body>
+   </html>
+
+And assuming the remainder of the dotted names in the above
+configuration can be resolved, the resulting page will contain two
+forms.  The appropriate handler will be called upon a submission of
+either.
+
+In this mode, the ``<formish:form>`` tags accept only two attributes:
+``controller`` and ``form_id``.  Both are required, and the
+``form_id`` attribute should be unique for each form within a forms
+group.  These attributes have the same meaning as when they are used
+in a non-multiform context.
+
+The remainder of the arguments that are normally associated with the
+``<formish:form>`` tag when the non-multiform mode is used (such as
+``for_``, ``name``, ``renderer``, ``permission``, ``containment``,
+``route_name``, and ``wrapper``) must be placed on the
+``<formish:forms>`` tag instead.
+
+Along with the attributes that normally belong to the
+``<formish:form>`` tag, the ``<formish:forms>`` tag also accepts a
+``view`` argument.  This argument should be a dotted name to a
+:mod:`repoze.bfg` view function or class that is willing to render a
+template that renders all the forms in the sequence of forms implied
+by the ``<formish:forms>`` directive.  These forms will be available
+as a sequence named ``request.forms`` as this template is rendered;
+each can be called to render a single form, e.g.:
+
+.. code-block:: xml
+   :linenos:
+
+   <html>
+   <head><title>My page</title></head>
+   <body>
+     <span tal:repeat="form request.forms" tal:replace="form()"/>
+   </body>
+   </html>
+
+Note that because there are multiple forms to render, the same
+template cannot currently be used to render multiple forms as is used
+to render a single form (the single-form template expects
+``request.form``, but a multiform view template will expect
+``request.forms``).
+
+The ``__call__`` method ("display method") of a form controller that
+is part of a ``forms`` group is never invoked.  Instead, the callable
+named by the ``view`` attribute attached to the ``forms`` tag is used
+as a display method.
+
+The ``action`` subtag of ``<formish:form>`` tags in this mode operate
+the same way as they do when multiple forms are not involved.
 
 Indices and tables
 ------------------
