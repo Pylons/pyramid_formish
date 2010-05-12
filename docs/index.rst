@@ -68,14 +68,23 @@ names a *controller* for this form definition.
 
 The ``for``, ``name``, and ``renderer`` attributes of a
 ``formish:form`` tag mirror the meaning of the meanings of these names
-in :mod:`repoze.bfg` ``view`` ZCML directive.  ``for`` represents the
-class or interface which the context must implement for this view to
-be invoked.  ``name`` is the view name.  ``renderer`` is the path to a
-Chameleon ZPT template which will be used to render the form when it
-is first presented, or redisplay the form with errors when form
-validation fails.  The template is either a BFG "resource
-specification" or an absolute or ZCML-package-relative path to an
-on-disk template.
+in :mod:`repoze.bfg` ``view`` ZCML directive.
+
+``for`` represents the class or interface which the context must
+implement for this view to be invoked. It is optional.  If it is not
+supplied, the form will be invokable against any context.
+
+``name`` is the view name.  It is optional.  If it is not supplied, it
+defaults to the empty string ``''``, which implies that the form will
+be the default view for its context.
+
+``renderer`` is the path to a Chameleon ZPT template which will be
+used to render the form when it is first presented, or redisplay the
+form with errors when form validation fails.  The template is either a
+BFG "resource specification" or an absolute or ZCML-package-relative
+path to an on-disk template.  It is optional.  If it is not supplied,
+the ``__call__`` method of the form controller must return a
+:class:`webob.Response` object rather than a dictionary.
 
 The ``form_id`` tag represents the HTML ``id`` attribute value that
 the form will use when rendered.
