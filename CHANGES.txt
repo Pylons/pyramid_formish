@@ -6,6 +6,10 @@ Next release
 
 - Made docs render.
 
+- Add a ``method`` attribute to the ``form`` ZCML directive.  If set,
+  it must be one of ``GET`` or ``POST``.  It is optional.  If it is
+  not provided, ``POST`` is assumed.
+
 0.2 (2010-04-26)
 ----------------
 

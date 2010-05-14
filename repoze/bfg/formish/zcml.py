@@ -7,6 +7,7 @@ import schemaish
 from zope.component import getSiteManager
 import zope.configuration.config
 from zope.configuration.fields import GlobalObject
+from zope.configuration.exceptions import ConfigurationError
 
 from zope.interface import Interface
 from zope.interface import implements
@@ -42,6 +43,7 @@ class IFormDirective(Interface):
     route_name = TextLine(title=u'route_name', required=False)
     wrapper = TextLine(title = u'wrapper', required=False)
     form_id = TextLine(title = u'name', required=False)
+    method = TextLine(title = u'method', required=False)
 
 class IFormInsideFormsDirective(Interface):
     controller = GlobalObject(title=u'display', required=True)
@@ -110,7 +112,7 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
                IFormDirective)
     def __init__(self, context, controller, for_=None, name='',
                  renderer=None, permission=None, containment=None,
-                 route_name=None, wrapper=None, form_id=None):
+                 route_name=None, wrapper=None, form_id=None, method=None):
         self.context = context
         self.controller = controller
         self.for_ = for_
@@ -121,6 +123,11 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
         self.route_name = route_name
         self.wrapper = wrapper
         self.form_id = form_id
+        method = method or 'POST'
+        if method not in ('GET', 'POST'):
+            raise ConfigurationError(
+                'method must be one of "GET" or "POST" (not "%s")' % method)
+        self.method = method
         self._actions = [] # mutated by subdirectives
 
     def after(self):
@@ -131,7 +138,7 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
         display_action = FormAction(None)
         for action in [display_action] + self._actions:
             form_view = FormView(self.controller, action, self._actions,
-                                 self.form_id)
+                                 self.form_id, self.method)
 
             view(self,
                  permission=self.permission,
@@ -145,15 +152,18 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
                  wrapper=self.wrapper)
 
 class FormView(object):
-    def __init__(self, controller_factory, action, actions, form_id=None):
+    def __init__(self, controller_factory, action, actions, form_id=None,
+                 method='POST'):
         self.controller_factory = controller_factory
         self.action = action
         self.actions = actions
         self.form_id = form_id
+        self.method = method
 
     def __call__(self, context, request):
         controller = self.controller_factory(context, request)
-        form = form_from_controller(controller, self.form_id, self.actions)
+        form = form_from_controller(controller, self.form_id, self.actions,
+                                    self.method)
         request.form = form
 
         if not self.action.name:
@@ -163,13 +173,14 @@ class FormView(object):
         # the result of a form submission
         return submitted(request, form, controller, self.action, controller)
 
-def form_from_controller(controller, form_id, actions=()):
+def form_from_controller(controller, form_id, actions=(), method='POST'):
     form_schema = schemaish.Structure()
 
     form_fields = controller.form_fields()
     for fieldname, field in controller.form_fields():
         form_schema.add(fieldname, field)
-    form = Form(form_schema, name=form_id, add_default_action=False)
+    form = Form(form_schema, name=form_id, add_default_action=False,
+                method=method)
     form.controller = controller
 
     for action in actions:

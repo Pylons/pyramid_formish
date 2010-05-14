@@ -107,6 +107,20 @@ class FormDirectiveTests(unittest.TestCase):
         directive.after()
         self.assertEqual(context.forms[0], directive)
 
+    def test_bad_method(self):
+        from zope.configuration.exceptions import ConfigurationError
+        context = DummyZCMLContext()
+        context.forms = []
+        self.assertRaises(ConfigurationError,
+                          self._makeOne, context, None, method='GOO')
+
+    def test_good_method(self):
+        context = DummyZCMLContext()
+        context.forms = []
+        inst = self._makeOne(context, None, method='GET')
+        self.assertEqual(inst.method, 'GET')
+        
+
 class ActionDirectiveTests(unittest.TestCase):
     def setUp(self):
         testing.cleanUp()
@@ -141,9 +155,11 @@ class ActionDirectiveTests(unittest.TestCase):
         self.assertEqual(action.title, 'Name')
     
 class TestFormView(unittest.TestCase):
-    def _makeOne(self, controller_factory, action, actions, form_id=None):
+    def _makeOne(self, controller_factory, action, actions, form_id=None,
+                 method='POST'):
         from repoze.bfg.formish.zcml import FormView
-        return FormView(controller_factory, action, actions, form_id=form_id)
+        return FormView(controller_factory, action, actions, form_id=form_id,
+                        method=method)
 
     def test_noname(self):
         import schemaish
@@ -162,6 +178,10 @@ class TestFormView(unittest.TestCase):
     def test_formid(self):
         view = self._makeOne(None, {'name':1, 'validate':True}, None, 'default')
         self.assertEqual(view.form_id, 'default')
+
+    def test_method(self):
+        view = self._makeOne(None, None, None, 'default', method='GET')
+        self.assertEqual(view.method, 'GET')
 
     def test_novalidate(self):
         import schemaish
@@ -277,6 +297,23 @@ class TestFormView(unittest.TestCase):
         factory = make_controller_factory(fields=[('title', title)],
                                           widgets={'title':titlewidget})
         view = self._makeOne(factory, action, actions)
+        context = testing.DummyModel()
+        request = testing.DummyRequest()
+        result = view(context, request)
+        self.assertEqual(result, '123')
+
+    def test_with_method_GET(self):
+        import schemaish
+        import validatish
+        import formish
+        from repoze.bfg.formish.zcml import FormAction
+        action = FormAction(None, 'cancel', False)
+        title = schemaish.String(validator=validatish.validator.Required())
+        actions = [action]
+        titlewidget = formish.Input()
+        factory = make_controller_factory(fields=[('title', title)],
+                                          widgets={'title':titlewidget})
+        view = self._makeOne(factory, action, actions, method='GET')
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)

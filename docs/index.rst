@@ -89,6 +89,11 @@ the ``__call__`` method of the form controller must return a
 The ``form_id`` tag represents the HTML ``id`` attribute value that
 the form will use when rendered.
 
+``method`` indicates the form submission method (the ``method``
+attribute of the HTML tag representing the form).  It must be one of
+``GET`` or ``POST``.  It is optional.  If it is not provided, ``POST``
+is assumed.
+
 The template in ``templates/form_template.pt`` might look something
 like this:
 
