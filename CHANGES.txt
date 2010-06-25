@@ -10,6 +10,10 @@ repoze.bfg.formish
   it must be one of ``GET`` or ``POST``.  It is optional.  If it is
   not provided, ``POST`` is assumed.
 
+- CheckedPassword widget didn't work.
+
+- Added note about ZCML ``formish`` namespace.
+
 0.2 (2010-04-26)
 ----------------
 

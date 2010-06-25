@@ -26,6 +26,32 @@ This package provides:
   collection of :mod:`repoze.bfg.formish` "form controllers" to be
   able to render them in the same HTML page.
 
+ZCML Directives
+---------------
+
+You must add the following to your application's ``configure.zcml`` to
+use the ``formish:form`` and ``formish:forms`` ZCML directives:
+
+.. code-block:: xml
+   :linenos:
+
+   <include package="repoze.bfg.formish" file="meta.zcml"/>
+
+You must also change your ZCML file's ``configure`` element to define
+the ``formish`` namespace:
+
+.. code-block:: xml
+   :linenos:
+
+    <configure xmlns="http://namespaces.repoze.org/bfg"
+               xmlns:formish="http://namespaces.repoze.org/formish">
+    ....
+    </configure>
+
+.. note:: If you see a traceback mentioning "unbound prefix" at
+   startup time, it's because you forgot to add the ``xmlns:formish``
+   attribute to your ZCML's ``configure`` tag.
+
 ``formish:form`` ZCML Directive
 -------------------------------
 
@@ -35,20 +61,12 @@ your :mod:`repoze.bfg` application, you can make use of the
 more special :mod:`repoze.bfg` "view" callables that render a form,
 making use of a user-defined "form controller".
 
-You must add the following to your application's ``configure.zcml`` to
-use the ``formish:form`` directive:
-
-.. code-block:: xml
-   :linenos:
-
-   <include package="repoze.bfg.formish" file="meta.zcml"/>
-
 The ZCML directive requires Python code in the form of a *form
 controller*.
 
-You refer to the form controller within a ``formish:form`` directive
-using the ``controller`` attribute, which is a dotted Python name
-referring to the form controller class:
+You refer to the form controller within a ``formish:form`` ZCML
+directive using the ``controller`` attribute, which is a dotted Python
+name referring to the form controller class:
 
 .. code-block:: xml
    :linenos:
