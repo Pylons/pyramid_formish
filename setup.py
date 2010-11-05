@@ -27,7 +27,6 @@ requires = [
     'setuptools',
     'pyramid',
     'formish',
-    'pkginfo',
     'mako',
     ]
 
