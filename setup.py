@@ -27,6 +27,7 @@ requires = [
     'setuptools',
     'pyramid',
     'formish',
+    'pkginfo',
     ]
 
 if sys.version_info[:2] < (2,5):

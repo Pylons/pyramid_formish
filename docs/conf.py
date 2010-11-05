@@ -30,10 +30,6 @@ for item in os.listdir(parent):
     if item.endswith('.egg'):
         sys.path.append(os.path.join(parent, item))
 
-import pkginfo
-
-pkg_info = pkginfo.Develop(os.path.join(os.path.dirname(__file__),'..'))
-
 # General configuration
 # ---------------------
 
@@ -58,7 +54,7 @@ copyright = '2010, Agendaless Consulting'
 # other places throughout the built documents.
 #
 # The short X.Y version.
-version = pkg_info.version
+version = '0.0'
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -97,10 +93,15 @@ pygments_style = 'sphinx'
 # Options for HTML output
 # -----------------------
 
+# Add and use Pylons theme
+sys.path.append(os.path.abspath('_themes'))
+html_theme_path = ['_themes']
+html_theme = 'pylons'
+
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
-html_style = 'repoze.css'
+# html_style = 'repoze.css'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -112,7 +113,7 @@ html_style = 'repoze.css'
 
 # The name of an image file (within the static path) to place at the top of
 # the sidebar.
-html_logo = '.static/logo_hi.gif'
+#html_logo = '.static/logo_hi.gif'
 
 # The name of an image file (within the static path) to use as favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or
@@ -123,7 +124,7 @@ html_logo = '.static/logo_hi.gif'
 # here, relative to this directory. They are copied after the builtin
 # static files, so a file named "default.css" will overwrite the builtin
 # "default.css".
-html_static_path = ['.static']
+html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.
