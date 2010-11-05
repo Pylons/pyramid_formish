@@ -12,13 +12,10 @@
 #
 ##############################################################################
 
-__version__ = '0.3'
+__version__ = '0.0'
 
 import os
 import sys
-
-from ez_setup import use_setuptools
-use_setuptools()
 
 from setuptools import setup, find_packages
 
@@ -28,16 +25,16 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
     'setuptools',
-    'repoze.bfg',
+    'pyramid',
     'formish',
     ]
 
 if sys.version_info[:2] < (2,5):
     requires.append('uuid')
 
-setup(name='repoze.bfg.formish',
+setup(name='pyramid_formish',
       version=__version__,
-      description='Formish bindings and helpers for repoze.bfg',
+      description='Formish bindings and helpers for Pyramid web framework',
       long_description=README + '\n\n' +  CHANGES,
       classifiers=[
         "Intended Audience :: Developers",
@@ -45,19 +42,20 @@ setup(name='repoze.bfg.formish',
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
         ],
-      keywords='web formish formgen bfg',
-      author="Agendaless Consulting",
+      keywords='web formish formgen bfg pyramid',
+      author="Chris McDonough, Agendaless Consulting",
       author_email="repoze-dev@lists.repoze.org",
       url="http://www.repoze.org",
       license="BSD-derived (http://www.repoze.org/LICENSE.txt)",
       packages=find_packages(),
       include_package_data=True,
-      namespace_packages=['repoze', 'repoze.bfg'],
       zip_safe=False,
-      tests_require = requires,
+      tests_require = requires + ['pkginfo'],
       install_requires= requires,
-      test_suite="repoze.bfg.formish",
+      test_suite="pyramid_formish",
       entry_points = """\
+        [console_scripts]
+        bfgformish2pyramidformish = pyramid_formish.fixer:main
       """
       )
 

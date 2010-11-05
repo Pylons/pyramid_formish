@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# repoze.bfg.formish documentation build configuration file
+# pyramid_formish documentation build configuration file
 #
 # This file is execfile()d with the current directory set to its containing
 # dir.
@@ -30,6 +30,10 @@ for item in os.listdir(parent):
     if item.endswith('.egg'):
         sys.path.append(os.path.join(parent, item))
 
+import pkginfo
+
+pkg_info = pkginfo.Develop(os.path.join(os.path.dirname(__file__),'..'))
+
 # General configuration
 # ---------------------
 
@@ -47,14 +51,14 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General substitutions.
-project = 'repoze.bfg.formish'
-copyright = '2010, Repoze Developers <repoze-dev@lists.repoze.org>'
+project = 'pyramid_formish'
+copyright = '2010, Agendaless Consulting'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
 #
 # The short X.Y version.
-version = '0.3'
+version = pkg_info.version
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -174,7 +178,7 @@ htmlhelp_basename = 'formishdoc'
 # (source start file, target name, title,
 #  author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'rbfgformish.tex', 'repoze.bfg.formish Documentation',
+  ('index', 'pyramid_formish.tex', 'pyramid_formish Documentation',
    'Repoze Developers', 'manual'),
 ]
 

@@ -1,9 +1,9 @@
 import unittest
-from repoze.bfg import testing
+from pyramid import testing
 
 class TestTemplateLoader(unittest.TestCase):
     def _makeOne(self, **kw):
-        from repoze.bfg.formish import TemplateLoader
+        from pyramid_formish import TemplateLoader
         return TemplateLoader(**kw)
 
     def test_search_path_None(self):
@@ -55,7 +55,7 @@ class TestZPTRenderer(unittest.TestCase):
         testing.cleanUp()
 
     def _getTargetClass(self):
-        from repoze.bfg.formish import ZPTRenderer
+        from pyramid_formish import ZPTRenderer
         return ZPTRenderer
     
     def _makeOne(self, *arg, **kw):
@@ -83,16 +83,16 @@ class TestZPTRenderer(unittest.TestCase):
     def test_call_extradir(self):
         from pkg_resources import resource_filename
         renderer = self._makeOne(
-            [resource_filename('repoze.bfg.formish.tests', 'fixtures')])
+            [resource_filename('pyramid_formish.tests', 'fixtures')])
         result = renderer('test.html', {})
         self.assertEqual(result, u'<div>Fixtures</div>')
         
     def test_call_with_utility_registrations(self):
         from pkg_resources import resource_filename
         from zope.component import getSiteManager
-        from repoze.bfg.formish import IFormishSearchPath
+        from pyramid_formish import IFormishSearchPath
         sm = getSiteManager()
-        sm.registerUtility([resource_filename('repoze.bfg.formish.tests',
+        sm.registerUtility([resource_filename('pyramid_formish.tests',
                                               'fixtures')],
                            IFormishSearchPath)
         renderer = self._makeOne(
@@ -102,18 +102,18 @@ class TestZPTRenderer(unittest.TestCase):
 
 class TestForm(unittest.TestCase):
     def _makeOne(self, *arg, **kw):
-        from repoze.bfg.formish import Form
+        from pyramid_formish import Form
         return Form(*arg, **kw)
 
     def test_with_renderer(self):
         from schemaish import Structure
-        from repoze.bfg.formish import ZPTRenderer
+        from pyramid_formish import ZPTRenderer
         form = self._makeOne(Structure(), renderer=None)
         self.failIfEqual(form.renderer.__class__, ZPTRenderer)
         
     def test_default_renderer(self):
         from schemaish import Structure
-        from repoze.bfg.formish import ZPTRenderer
+        from pyramid_formish import ZPTRenderer
         form = self._makeOne(Structure())
         self.failUnlessEqual(form.renderer.__class__, ZPTRenderer)
 

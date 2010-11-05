@@ -5,6 +5,7 @@ from formish import validation
 import schemaish
 
 from zope.component import getSiteManager
+
 import zope.configuration.config
 from zope.configuration.fields import GlobalObject
 from zope.configuration.exceptions import ConfigurationError
@@ -15,13 +16,13 @@ from zope.interface import implements
 from zope.schema import TextLine
 from zope.schema import Bool
 
-from repoze.bfg.zcml import view
+from pyramid.zcml import view
 
-from repoze.bfg.formish import Form
-from repoze.bfg.formish import ValidationError
-from repoze.bfg.formish import IFormishSearchPath
-from repoze.bfg.configuration import Configurator
-from repoze.bfg.threadlocal import get_current_registry
+from pyramid_formish import Form
+from pyramid_formish import ValidationError
+from pyramid_formish import IFormishSearchPath
+from pyramid.configuration import Configurator
+from pyramid.threadlocal import get_current_registry
 
 class IFormsDirective(Interface):
     view = GlobalObject(title=u'view', required=False)

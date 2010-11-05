@@ -6,7 +6,7 @@
 
   <meta:groupingDirective
       name="forms"
-      namespace="http://namespaces.repoze.org/formish"
+      namespace="http://pylonshq.com/pyramid_formish"
       schema="repoze.bfg.formish.zcml.IFormsDirective"
       handler="repoze.bfg.formish.zcml.FormsDirective"
       />
@@ -15,7 +15,7 @@
 
   <meta:groupingDirective
       name="form"
-      namespace="http://namespaces.repoze.org/formish"
+      namespace="http://pylonshq.com/pyramid_formish"
       usedIn="repoze.bfg.formish.zcml.IFormsDirective"
       schema="repoze.bfg.formish.zcml.IFormInsideFormsDirective"
       handler="repoze.bfg.formish.zcml.FormDirective"
@@ -25,7 +25,7 @@
 
   <meta:groupingDirective
       name="form"
-      namespace="http://namespaces.repoze.org/formish"
+      namespace="http://pylonshq.com/pyramid_formish"
       schema="repoze.bfg.formish.zcml.IFormDirective"
       handler="repoze.bfg.formish.zcml.FormDirective"
       />
@@ -34,7 +34,7 @@
 
   <meta:directive
       name="action"
-      namespace="http://namespaces.repoze.org/formish"
+      namespace="http://pylonshq.com/pyramid_formish"
       usedIn="repoze.bfg.formish.zcml.IFormDirective"
       schema="repoze.bfg.formish.zcml.IActionDirective"
       handler="repoze.bfg.formish.zcml.action"
@@ -44,7 +44,7 @@
 
   <meta:directive
       name="add_template_path"
-      namespace="http://namespaces.repoze.org/formish"
+      namespace="http://pylonshq.com/pyramid_formish"
       schema="repoze.bfg.formish.zcml.IAddTemplatePath"
       handler="repoze.bfg.formish.zcml.add_template_path"
       />

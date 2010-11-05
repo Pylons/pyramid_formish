@@ -10,7 +10,7 @@ from zope.interface import Interface
 from zope.component import queryUtility
 from zope.component import getSiteManager
 
-from repoze.bfg.settings import get_settings
+from pyramid.settings import get_settings
 
 def cache(func):
     def load(self, *args):
@@ -68,7 +68,7 @@ class ZPTRenderer(object):
         # if there are ZCML-registered directories, use those too
         more = queryUtility(IFormishSearchPath, default=[])
         directories.extend(more)
-        default = resource_filename('repoze.bfg.formish', 'templates/zpt')
+        default = resource_filename('pyramid_formish', 'templates/zpt')
         directories.append(default)
         self.loader = TemplateLoader(directories, auto_reload=auto_reload)
 

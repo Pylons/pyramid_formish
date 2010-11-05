@@ -1,39 +1,9 @@
-repoze.bfg.formish
-==================
+pyramid_formish
+===============
 
-0.3 (2010-05-14)
-----------------
+Next release
+-----------
 
-- Made docs render.
+- Forked from repoze.bfg.formish 0.3.
 
-- Add a ``method`` attribute to the ``form`` ZCML directive.  If set,
-  it must be one of ``GET`` or ``POST``.  It is optional.  If it is
-  not provided, ``POST`` is assumed.
 
-- CheckedPassword widget didn't work.
-
-- Added note about ZCML ``formish`` namespace.
-
-0.2 (2010-04-26)
-----------------
-
-- Make template renderer use utf-8 encoding by default.
-
-- The following names are no longer available as attributes of the
-  request object in a form rendering::
-
-    request.form_defaults
-    request.form_schema
-    request.form_fields
-    request.form_actions
-    request.form_widgets
-    request.form_action
-    request.form_controller
-
-- It is now possible to render multiple forms per page using a
-  ``<formish:forms>`` directive (see documentation).
-
-0.1 (2008-12-18)
-----------------
-
-- Initial release.

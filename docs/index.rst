@@ -1,9 +1,9 @@
-repoze.bfg.formish
+pyramid_formish
 ==================
 
-:mod:`repoze.bfg.formish` is a package which provides
-:mod:`repoze.bfg` bindings for the :term:`Formish` package, which is
-an excellent form generation and validation package for Python.
+:mod:`pyramid_formish` is a package which provides :mod:`pyramid` bindings
+for the :term:`Formish` package, which is an excellent form generation and
+validation package for Python.
 
 This package provides:
 
@@ -20,10 +20,10 @@ This package provides:
   configuration of override Formish template locations.
 
 - A ``formish:form`` ZCML directive which can be used to configure a
-  :mod:`repoze.bfg.formish` "form controller".
+  :mod:`pyramid_formish` "form controller".
 
 - A ``formish:forms`` ZCML directive which can be used to configure a
-  collection of :mod:`repoze.bfg.formish` "form controllers" to be
+  collection of :mod:`pyramid_formish` "form controllers" to be
   able to render them in the same HTML page.
 
 ZCML Directives
@@ -35,7 +35,7 @@ use the ``formish:form`` and ``formish:forms`` ZCML directives:
 .. code-block:: xml
    :linenos:
 
-   <include package="repoze.bfg.formish" file="meta.zcml"/>
+   <include package="pyramid_formish" file="meta.zcml"/>
 
 You must also change your ZCML file's ``configure`` element to define
 the ``formish`` namespace:
@@ -43,8 +43,8 @@ the ``formish`` namespace:
 .. code-block:: xml
    :linenos:
 
-    <configure xmlns="http://namespaces.repoze.org/bfg"
-               xmlns:formish="http://namespaces.repoze.org/formish">
+    <configure xmlns="http://pylonshq.com/pyramid"
+               xmlns:formish="http://pylonshq.com/pyramid_formish">
     ....
     </configure>
 
@@ -55,11 +55,11 @@ the ``formish`` namespace:
 ``formish:form`` ZCML Directive
 -------------------------------
 
-When the ``meta.zcml`` of :mod:`repoze.bfg.formish` is included within
-your :mod:`repoze.bfg` application, you can make use of the
-``formish:form`` ZCML directive.  A ``formish:form`` configures one or
-more special :mod:`repoze.bfg` "view" callables that render a form,
-making use of a user-defined "form controller".
+When the ``meta.zcml`` of :mod:`pyramid_formish` is included within your
+:mod:`pyramid` application, you can make use of the ``formish:form`` ZCML
+directive.  A ``formish:form`` configures one or more special
+:mod:`pyramid` "view" callables that render a form, making use of a
+user-defined "form controller".
 
 The ZCML directive requires Python code in the form of a *form
 controller*.
@@ -86,7 +86,7 @@ names a *controller* for this form definition.
 
 The ``for``, ``name``, and ``renderer`` attributes of a
 ``formish:form`` tag mirror the meaning of the meanings of these names
-in :mod:`repoze.bfg` ``view`` ZCML directive.
+in :mod:`pyramid` ``view`` ZCML directive.
 
 ``for`` represents the class or interface which the context must
 implement for this view to be invoked. It is optional.  If it is not
@@ -96,13 +96,13 @@ supplied, the form will be invokable against any context.
 defaults to the empty string ``''``, which implies that the form will
 be the default view for its context.
 
-``renderer`` is the path to a Chameleon ZPT template which will be
-used to render the form when it is first presented, or redisplay the
-form with errors when form validation fails.  The template is either a
-BFG "resource specification" or an absolute or ZCML-package-relative
-path to an on-disk template.  It is optional.  If it is not supplied,
-the ``__call__`` method of the form controller must return a
-:class:`webob.Response` object rather than a dictionary.
+``renderer`` is the path to a Chameleon ZPT template which will be used to
+render the form when it is first presented, or redisplay the form with errors
+when form validation fails.  The template is either a :mod:`pyramid`
+"resource specification" or an absolute or ZCML-package-relative path to an
+on-disk template.  It is optional.  If it is not supplied, the ``__call__``
+method of the form controller must return a :class:`webob.Response` object
+rather than a dictionary.
 
 The ``form_id`` tag represents the HTML ``id`` attribute value that
 the form will use when rendered.
@@ -190,7 +190,7 @@ responsibilities:
 - Provide a *display method* for the form.
 
 - Provide one or more *handlers* for the form's actions that are
-  invoked by :mod:`repoze.bfg.formish` after succesful validation.
+  invoked by :mod:`pyramid_formish` after succesful validation.
 
 A form controller may also (but commonly does not) provide a method
 that does custom validation of a form submission.
@@ -208,10 +208,10 @@ business logic conditions, not "framework meta" conditions (such as
 Form Controller Constructor
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The constructor of a form controller class should accept two
-arguments: ``context`` and ``request``.  The ``context`` is the BFG
-context of the view which creates the form controller, and the
-``request`` is the WebOb request object.  For example:
+The constructor of a form controller class should accept two arguments:
+``context`` and ``request``.  The ``context`` is the :mod:`pyramid` context
+of the view which creates the form controller, and the ``request`` is the
+WebOb request object.  For example:
 
 .. code-block:: python
    :linenos:
@@ -224,10 +224,10 @@ context of the view which creates the form controller, and the
            self.request = request
            self.workflow = security.get_workflow(context)
 
-The constructor for a form controller is called whenever a request
-that displays or validates a form is handled.  Like a BFG view, a form
-controller's lifecycle is no longer than the lifecycle of a single BFG
-request.
+The constructor for a form controller is called whenever a request that
+displays or validates a form is handled.  Like a :mod:`pyramid` view, a form
+controller's lifecycle is no longer than the lifecycle of a single
+:mod:`pyramid` request.
 
 The imports and associated APIs defined in the examples above and
 below are fictional, but for purposes of example, we'll assume that
@@ -349,7 +349,7 @@ error is raised.
 THe ``schemaish`` package allows you to define a set of fields in a
 *schema*, which is spelled as a Python class definition with
 class-level attributes as named structure objects.  This spelling is
-not directly supported by :mod:`repoze.bfg.formish`, largely
+not directly supported by :mod:`pyramid_formish`, largely
 because it doesn't match the idea of conditional fields very well.
 
 Providing Widgets
@@ -464,7 +464,7 @@ definition for a form controller (which is defined in ZCML as
    :linenos:
 
    from webob.exc import HTTPFound
-   from repoze.bfg.traversal import model_url
+   from pyramid.traversal import model_url
 
    class AddCommunityFormController(object):
        def __init__(self, context, request):
@@ -483,8 +483,8 @@ form we've been fleshing out so far is as follows (it is
    :linenos:
 
    from webob.exc import HTTPFound
-   from repoze.bfg.security import authenticated_userid
-   from repoze.bfg.traversal import model_url
+   from pyramid.security import authenticated_userid
+   from pyramid.traversal import model_url
 
    from repoze.lemonade.content import create_content
    from my.package.interfaces import ICommunity
@@ -531,7 +531,7 @@ If a ``handle_<actionname>`` method for a form action does not exist
 on a form controller as necessary, an error is raised at form
 submission time.
 
-A handler may also raise a ``repoze.bfg.formish.ValidationError``
+A handler may also raise a ``pyramid_formish.ValidationError``
 exception if it detects a post-validation error.  This permits
 "whole-form" validation that requires data that may only be known by
 the handler at runtime.  When a handler raises such an error, the form
@@ -542,7 +542,7 @@ to error messages, e.g.:
 .. code-block:: python
    :linenos:
 
-   from repoze.bfg.formish import ValidationError
+   from pyramid_formish import ValidationError
    raise ValidationError(title='Wrong!')
 
 A Fully Composed Form Controller
@@ -557,8 +557,8 @@ Here's a fully composed form controller:
    from my.package import widgets
    from my.package import api
 
-   from repoze.bfg.security import authenticated_userid
-   from repoze.bfg.traversal import model_url
+   from pyramid.security import authenticated_userid
+   from pyramid.traversal import model_url
    from webob.exc import HTTPFound
 
    import schemaish
@@ -744,7 +744,7 @@ The remainder of the arguments that are normally associated with the
 Along with the attributes that normally belong to the
 ``<formish:form>`` tag, the ``<formish:forms>`` tag also accepts a
 ``view`` argument.  This argument should be a dotted name to a
-:mod:`repoze.bfg` view function or class that is willing to render a
+:mod:`pyramid` view function or class that is willing to render a
 template that renders all the forms in the sequence of forms implied
 by the ``<formish:forms>`` directive.  These forms will be available
 as a sequence named ``request.forms`` as this template is rendered;

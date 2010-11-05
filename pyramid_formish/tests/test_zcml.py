@@ -1,5 +1,5 @@
 import unittest
-from repoze.bfg import testing
+from pyramid import testing
 
 class FormsDirectiveTests(unittest.TestCase):
     def setUp(self):
@@ -9,11 +9,11 @@ class FormsDirectiveTests(unittest.TestCase):
         testing.cleanUp()
         
     def _makeOne(self, context, **kw):
-        from repoze.bfg.formish.zcml import FormsDirective
+        from pyramid_formish.zcml import FormsDirective
         return FormsDirective(context, **kw)
 
     def test_after_render_view(self):
-        from repoze.bfg.view import render_view_to_response
+        from pyramid.view import render_view_to_response
         def view(context, request):
             return 'response'
         context = DummyZCMLContext()
@@ -29,7 +29,7 @@ class FormsDirectiveTests(unittest.TestCase):
         self.assertEqual(len(request.forms), 1)
 
     def test_after_render_controller_submission(self):
-        from repoze.bfg.view import render_view_to_response
+        from pyramid.view import render_view_to_response
         context = DummyZCMLContext()
         directive = self._makeOne(context, view=None)
         directive.forms = [DummyFormDirective()]
@@ -46,8 +46,8 @@ class FormsDirectiveTests(unittest.TestCase):
     def test_after_render_controller_curriedview(self):
         def view(context, request):
             return 'response'
-        from repoze.bfg.formish import ValidationError
-        from repoze.bfg.view import render_view_to_response
+        from pyramid_formish import ValidationError
+        from pyramid.view import render_view_to_response
         context = DummyZCMLContext()
         directive = self._makeOne(context, view=view)
         formdirective = DummyFormDirective()
@@ -72,14 +72,14 @@ class FormDirectiveTests(unittest.TestCase):
         testing.cleanUp()
         
     def _makeOne(self, context, controller_factory, **kw):
-        from repoze.bfg.formish.zcml import FormDirective
+        from pyramid_formish.zcml import FormDirective
         return FormDirective(context, controller_factory, **kw)
 
     def test_after_outside_forms_context(self):
         import webob.multidict
         import schemaish
-        from repoze.bfg.view import render_view_to_response
-        from repoze.bfg.formish.zcml import FormAction
+        from pyramid.view import render_view_to_response
+        from pyramid_formish.zcml import FormAction
         context = DummyZCMLContext()
         title = schemaish.String()
         factory = make_controller_factory(fields=[('title', title)])
@@ -129,7 +129,7 @@ class ActionDirectiveTests(unittest.TestCase):
         testing.cleanUp()
 
     def _callFUT(self, context, name, title=None, validate=True):
-        from repoze.bfg.formish.zcml import action
+        from pyramid_formish.zcml import action
         return action(context, name, title, validate)
 
     def test_with_title(self):
@@ -157,7 +157,7 @@ class ActionDirectiveTests(unittest.TestCase):
 class TestFormView(unittest.TestCase):
     def _makeOne(self, controller_factory, action, actions, form_id=None,
                  method='POST'):
-        from repoze.bfg.formish.zcml import FormView
+        from pyramid_formish.zcml import FormView
         return FormView(controller_factory, action, actions, form_id=form_id,
                         method=method)
 
@@ -165,7 +165,7 @@ class TestFormView(unittest.TestCase):
         import schemaish
         import validatish
         title = schemaish.String(validator=validatish.validator.Required())
-        from repoze.bfg.formish.zcml import FormAction
+        from pyramid_formish.zcml import FormAction
         action = FormAction(None, 'cancel', False)
         actions = [action]
         factory = make_controller_factory(fields=[('title', title)])
@@ -186,7 +186,7 @@ class TestFormView(unittest.TestCase):
     def test_novalidate(self):
         import schemaish
         import validatish
-        from repoze.bfg.formish.zcml import FormAction
+        from pyramid_formish.zcml import FormAction
         title = schemaish.String(validator=validatish.validator.Required())
         action = FormAction('cancel', 'cancel', False)
         actions = [action]
@@ -199,7 +199,7 @@ class TestFormView(unittest.TestCase):
 
     def test_with_actionsuccess(self):
         import schemaish
-        from repoze.bfg.formish.zcml import FormAction
+        from pyramid_formish.zcml import FormAction
         title = schemaish.String()
         L = []
         def success(controller, converted):
@@ -218,7 +218,7 @@ class TestFormView(unittest.TestCase):
 
     def test_validate_no_error(self):
         import schemaish
-        from repoze.bfg.formish.zcml import FormAction
+        from pyramid_formish.zcml import FormAction
         title = schemaish.String()
         action = FormAction('submit', 'submit', True)
         actions = [action]
@@ -235,7 +235,7 @@ class TestFormView(unittest.TestCase):
     def test_validate_form_error(self):
         import schemaish
         import validatish
-        from repoze.bfg.formish.zcml import FormAction
+        from pyramid_formish.zcml import FormAction
         title = schemaish.String(validator=validatish.validator.Required())
         action = FormAction('submit', 'submit', True)
         actions = [action]
@@ -252,8 +252,8 @@ class TestFormView(unittest.TestCase):
 
     def test_validate_validation_error(self):
         import schemaish
-        from repoze.bfg.formish import ValidationError
-        from repoze.bfg.formish.zcml import FormAction
+        from pyramid_formish import ValidationError
+        from pyramid_formish.zcml import FormAction
         title = schemaish.String()
         action = FormAction('submit', 'submit', True)
         actions = [action]
@@ -272,7 +272,7 @@ class TestFormView(unittest.TestCase):
     def test_selfvalidate(self):
         import schemaish
         import validatish
-        from repoze.bfg.formish.zcml import FormAction
+        from pyramid_formish.zcml import FormAction
         title = schemaish.String()
         action = FormAction('submit', 'submit', True)
         actions = [action]
@@ -289,7 +289,7 @@ class TestFormView(unittest.TestCase):
         import schemaish
         import validatish
         import formish
-        from repoze.bfg.formish.zcml import FormAction
+        from pyramid_formish.zcml import FormAction
         action = FormAction(None, 'cancel', False)
         title = schemaish.String(validator=validatish.validator.Required())
         actions = [action]
@@ -306,7 +306,7 @@ class TestFormView(unittest.TestCase):
         import schemaish
         import validatish
         import formish
-        from repoze.bfg.formish.zcml import FormAction
+        from pyramid_formish.zcml import FormAction
         action = FormAction(None, 'cancel', False)
         title = schemaish.String(validator=validatish.validator.Required())
         actions = [action]
@@ -324,11 +324,11 @@ class TestAddTemplatePath(unittest.TestCase):
         testing.cleanUp()
         
     def _callFUT(self, context, path):
-        from repoze.bfg.formish.zcml import add_template_path
+        from pyramid_formish.zcml import add_template_path
         return add_template_path(context, path)
 
     def test_abspath(self):
-        from repoze.bfg.formish.zcml import IFormishSearchPath
+        from pyramid_formish.zcml import IFormishSearchPath
         from zope.component import getUtility
         import os.path
         here = os.path.dirname(__file__)
@@ -339,11 +339,11 @@ class TestAddTemplatePath(unittest.TestCase):
         self.assertEqual(getUtility(IFormishSearchPath), [abspath])
 
     def test_pkg_relpath(self):
-        from repoze.bfg.formish.zcml import IFormishSearchPath
-        import repoze.bfg.formish.tests
+        from pyramid_formish.zcml import IFormishSearchPath
+        import pyramid_formish.tests
         from zope.component import getUtility
         import os.path
-        context = DummyZCMLContext(repoze.bfg.formish.tests)
+        context = DummyZCMLContext(pyramid_formish.tests)
         self._callFUT(context, 'fixtures')
         context.ac[0]['callable']()
         here = os.path.dirname(__file__)
@@ -353,11 +353,11 @@ class TestAddTemplatePath(unittest.TestCase):
                           )
 
     def test_pkg_abspath(self):
-        from repoze.bfg.formish.zcml import IFormishSearchPath
-        import repoze.bfg.formish.tests
+        from pyramid_formish.zcml import IFormishSearchPath
+        import pyramid_formish.tests
         from zope.component import getUtility
         import os.path
-        context = DummyZCMLContext(repoze.bfg.formish.tests)
+        context = DummyZCMLContext(pyramid_formish.tests)
         self._callFUT(context, 'chameleon.formish.tests:fixtures')
         context.ac[0]['callable']()
         here = os.path.dirname(__file__)
@@ -369,7 +369,7 @@ class TestAddTemplatePath(unittest.TestCase):
         
 class DummyZCMLContext:
     info = None
-    package = ''
+    package = 'pyramid_formish'
     def __init__(self, resolved=None):
         self.resolved = resolved
         self.ac =[]
