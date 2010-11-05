@@ -28,6 +28,7 @@ requires = [
     'pyramid',
     'formish',
     'pkginfo',
+    'mako',
     ]
 
 if sys.version_info[:2] < (2,5):
@@ -56,7 +57,7 @@ setup(name='pyramid_formish',
       test_suite="pyramid_formish",
       entry_points = """\
         [console_scripts]
-        bfgformish2pyramidformish = pyramid_formish.fixer:main
+        bfgformish2pyramidformish = pyramid_formish.fix_formish_imports:main
       """
       )
 

@@ -774,6 +774,132 @@ as a display method.
 The ``action`` subtag of ``<formish:form>`` tags in this mode operate
 the same way as they do when multiple forms are not involved.
 
+.. _converting_a_bfg_app:
+
+Converting a :mod:`repoze.bfg.formish` Application to :mod:`pyramid_formish`
+----------------------------------------------------------------------------
+
+Prior iterations of :mod:`pyramid_formish` were released as a package named
+:mod:`repoze.bfg.formish`.  :mod:`repoze.bfg.formish` users are encouraged to
+upgrade their deployments to :mod:`pyramid_formish`, as, after the first
+final release of :mod:`pyramid_formish`, further feature development on
+:mod:`repoze.bfg.formish` will cease.
+
+Most existing :mod:`repoze.bfg.formish` applications can be converted to a
+:mod:`pyramid_formish` application in a mostly automated fashion.  Here's how
+to convert a :mod:`repoze.bfg.formish` application to a
+:mod:`pyramid_formish` application:
+
+#. Ensure that your application works under :mod:`repoze.bfg.formish` version
+   0.3 or better.  If your application has an automated test suite, run it
+   while your application is using :mod:`repoze.bfg.formish` 0.3+.
+   Otherwise, test it manually.  It is only safe to proceed to the next step
+   once your application works under :mod:`repoze.bfg.formish` 0.3+.
+
+   If your application has a proper set of dependencies, and a standard
+   automated test suite, you might test your :mod:`repoze.bfg.formish`
+   application against :mod:`repoze.bfg.formish` 0.3 like so:
+
+   .. code-block:: bash
+
+     $ bfgenv/bin/python setup.py test
+
+   ``bfgenv`` above will be the virtualenv into which you've installed
+   :mod:`repoze.bfg.formish` 0.3.
+
+#. Install :mod:`pyramid_formish` into a *separate* virtualenv as per the
+   instructions in :ref:`installing_chapter`.  The :mod:`pyramid_formish`
+   virtualenv should be separate from the one you've used to install
+   :mod:`repoze.bfg.formish`.  A quick way to do this:
+
+   .. code-block:: bash
+
+      $ cd ~
+      $ virtualenv --no-site-packages pyramidenv
+      $ cd pyramidenv
+      $ bin/easy_install pyramid_formish
+
+#. Put a *copy* of your :mod:`repoze.bfg.formish` application into a temporary
+   location (perhaps by checking a fresh copy of the application out
+   of a version control repository).  For example:
+
+   .. code-block:: bash
+
+      $ cd /tmp
+      $ svn co http://my.server/my/bfg/application/trunk bfgapp
+
+#. Use the ``bfgformish2pyramidformish`` script present in the ``bin``
+   directory of the :mod:`pyramid_formish` virtualenv to convert all
+   :mod:`repoze.bfg.formish` Python import statements into compatible
+   :mod:`pyramid_formish` import statements. ``bfg2pyramid`` will also fix
+   ZCML directive usages of common :mod:`repoze.bfg.formish` directives. You
+   invoke ``bfg2pyramid`` by passing it the *path* of the copy of your
+   application.  The path passed should contain a "setup.py" file,
+   representing your :mod:`repoze.bfg.formish` application's setup script.
+   ``bfgformish2pyramidformish`` will change the copy of the application *in
+   place*.
+
+   .. code-block:: bash
+ 
+      $ ~/pyramidenv/bfgformish2pyramidformish /tmp/bfgapp
+
+   ``bfgformish2pyramidformish`` will convert the following
+   :mod:`repoze.bfg.formish` application aspects to :mod:`pyramid_formish`
+   compatible analogues:
+
+   - Python ``import`` statements naming :mod:`repoze.bfg.formish` APIs will
+     be converted to :mod:`pyramid_formish` compatible ``import`` statements.
+     Every Python file beneath the top-level path will be visited and
+     converted recursively, except Python files which live in
+     directories which start with a ``.`` (dot).
+
+   - Each ZCML file found (recursively) within the path will have the default
+     ``xmlns:formish`` attribute attached to the ``configure`` tag changed
+     from ``http://namespaces.repoze.org/formish`` to
+     ``http://pylonshq.com/pyramid_formish``.  Every ZCML file beneath the
+     top-level path (files ending with ``.zcml``) will be visited and
+     converted recursively, except ZCML files which live in directories which
+     start with a ``.`` (dot).
+
+   - ZCML files which contain directives that have attributes which name a
+     ``repoze.bfg.formish`` API module or attribute of an API module will be
+     converted to :mod:`pyramid_formish` compatible ZCML attributes.  Every
+     ZCML file beneath the top-level path (files ending with ``.zcml``) will
+     be visited and converted recursively, except ZCML files which live in
+     directories which start with a ``.`` (dot).
+
+#. Edit the ``setup.py`` file of the application you've just converted (if
+   you've been using the example paths, this will be
+   ``/tmp/bfgapp/setup.py``) to depend on the ``pyramid_formish``
+   distribution instead the of ``repoze.bfg.formish`` distribution in its
+   ``install_requires`` list.  The original may look like this:
+
+   .. code-block:: text
+
+     requires = ['repoze.bfg.formish', ... other dependencies ...]
+
+   Edit the ``setup.py`` so it has:
+
+   .. code-block:: text
+
+     requires = ['pyramid_formish', ... other dependencies ...]
+
+   All other install-requires and tests-requires dependencies save for the
+   one on ``repoze.bfg.formish`` can remain the same.
+
+#. Retest your application using :mod:`pyramid_formish`.  This might be as
+   easy as:
+
+   .. code-block:: bash
+
+     $ cd /tmp/bfgapp
+     $ ~/pyramidenv/bin/python setup.py test
+
+#. Fix any test failures.
+
+#. Start using the converted version of your application.  Celebrate.
+
+
 Indices and tables
 ------------------
 

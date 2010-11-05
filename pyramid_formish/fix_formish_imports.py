@@ -8,16 +8,10 @@ from lib2to3.fixer_util import Name
 from lib2to3.fixer_util import attr_chain
 from lib2to3 import fixer_base
 
-MAPPING = {'repoze.bfg':'pyramid_formish'}
-
-MODULE_NAMES = (
-    'formish',
-    )
-
-for name in MODULE_NAMES:
-    frm = 'repoze.bfg.' + name
-    to =  'pyramid_' + name
-    MAPPING[frm] = to
+MAPPING = {
+    'repoze.bfg.formish':'pyramid_formish',
+    'repoze.bfg.formish.zcml':'pyramid_formish.zcml',
+    }
 
 def alternates(members):
     return "(" + "|".join(map(str, members)) + ")"
@@ -60,7 +54,7 @@ def build_pattern(mapping=MAPPING):
     names = alternates(bare_names)
     yield "power< bare_with_attr=%s >" % names
 
-class FixImports(fixer_base.BaseFix):
+class FixFormishImports(fixer_base.BaseFix):
 
     mapping = MAPPING
     run_order = 8
@@ -73,11 +67,11 @@ class FixImports(fixer_base.BaseFix):
         # We override this, so MAPPING can be pragmatically altered and the
         # changes will be reflected in PATTERN.
         self.PATTERN = self.build_pattern()
-        super(FixImports, self).compile_pattern()
+        super(FixFormishImports, self).compile_pattern()
 
     # Don't match the node if it's within another match.
     def match(self, node):
-        match = super(FixImports, self).match
+        match = super(FixFormishImports, self).match
         results = match(node)
         if results:
             # Module usage could be in the trailer of an attribute lookup, so we
@@ -89,7 +83,7 @@ class FixImports(fixer_base.BaseFix):
         return False
 
     def start_tree(self, tree, filename):
-        super(FixImports, self).start_tree(tree, filename)
+        super(FixFormishImports, self).start_tree(tree, filename)
         self.replace = {}
 
     def transform(self, node, results):
@@ -124,19 +118,13 @@ class FixImports(fixer_base.BaseFix):
             if new_name:
                 node.replace(Name(new_name, prefix=bare_name.prefix))
 
-MODULE_ALTERNATIVES = []
-for name in MODULE_NAMES:
-    MODULE_ALTERNATIVES.append(r'\.' + re.escape(name)+r'[\w\.]*?')
-
-MODULE_ALTERNATIVES = '|'.join(MODULE_ALTERNATIVES)
-
 BFG_NS_RE = r'xmlns\:formish\s*?=\s*?[\'\"]http://namespaces\.repoze\.org/formish[\'\"]'
-BFG_IN_ATTR = r'(repoze\.bfg.formish)(%s)' % MODULE_ALTERNATIVES
+BFG_IN_ATTR = r'repoze\.bfg\.formish'
 ATTR = re.compile(BFG_IN_ATTR, re.MULTILINE)
 NS = re.compile(BFG_NS_RE, re.MULTILINE)
 
 def replace(match):
-    return 'pyramid_formish%s' % match.group(2)
+    return 'pyramid_formish'
 
 def fix_zcml(path):
     for root, dirs, files in os.walk(path):
@@ -144,7 +132,7 @@ def fix_zcml(path):
             if file.endswith('.zcml'):
                 absfile = os.path.join(root, file)
                 text = open(absfile, 'rb').read()
-                newt = NS.sub('xmlns="http://pylonshq.com/pyramid_formish"',
+                newt = NS.sub('xmlns:formish="http://pylonshq.com/pyramid_formish"',
                               text)
                 newt = ATTR.sub(replace, newt)
                 if text != newt:
@@ -161,7 +149,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
     path = argv[1]
-    fixer_names = get_fixers_from_package('pyramid_formish.fixer')
+    fixer_names = get_fixers_from_package('pyramid_formish')
     tool = RefactoringTool(fixer_names)
     tool.refactor([path], write=True)
     fix_zcml(path)
