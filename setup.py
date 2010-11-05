@@ -27,7 +27,7 @@ requires = [
     'setuptools',
     'pyramid',
     'formish',
-    'mako',
+    'Mako',
     ]
 
 if sys.version_info[:2] < (2,5):
