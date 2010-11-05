@@ -7,8 +7,8 @@
   <meta:groupingDirective
       name="forms"
       namespace="http://pylonshq.com/pyramid_formish"
-      schema="repoze.bfg.formish.zcml.IFormsDirective"
-      handler="repoze.bfg.formish.zcml.FormsDirective"
+      schema="pyramid_formish.zcml.IFormsDirective"
+      handler="pyramid_formish.zcml.FormsDirective"
       />
 
   <!-- form directive used in forms directive -->
@@ -16,9 +16,9 @@
   <meta:groupingDirective
       name="form"
       namespace="http://pylonshq.com/pyramid_formish"
-      usedIn="repoze.bfg.formish.zcml.IFormsDirective"
-      schema="repoze.bfg.formish.zcml.IFormInsideFormsDirective"
-      handler="repoze.bfg.formish.zcml.FormDirective"
+      usedIn="pyramid_formish.zcml.IFormsDirective"
+      schema="pyramid_formish.zcml.IFormInsideFormsDirective"
+      handler="pyramid_formish.zcml.FormDirective"
       />
 
   <!-- form directive at top level -->
@@ -26,8 +26,8 @@
   <meta:groupingDirective
       name="form"
       namespace="http://pylonshq.com/pyramid_formish"
-      schema="repoze.bfg.formish.zcml.IFormDirective"
-      handler="repoze.bfg.formish.zcml.FormDirective"
+      schema="pyramid_formish.zcml.IFormDirective"
+      handler="pyramid_formish.zcml.FormDirective"
       />
 
   <!-- action directive used as subdirective of "form" and "forms->form" -->
@@ -35,9 +35,9 @@
   <meta:directive
       name="action"
       namespace="http://pylonshq.com/pyramid_formish"
-      usedIn="repoze.bfg.formish.zcml.IFormDirective"
-      schema="repoze.bfg.formish.zcml.IActionDirective"
-      handler="repoze.bfg.formish.zcml.action"
+      usedIn="pyramid_formish.zcml.IFormDirective"
+      schema="pyramid_formish.zcml.IActionDirective"
+      handler="pyramid_formish.zcml.action"
       />
 
   <!-- add_template_path directive -->
@@ -45,8 +45,8 @@
   <meta:directive
       name="add_template_path"
       namespace="http://pylonshq.com/pyramid_formish"
-      schema="repoze.bfg.formish.zcml.IAddTemplatePath"
-      handler="repoze.bfg.formish.zcml.add_template_path"
+      schema="pyramid_formish.zcml.IAddTemplatePath"
+      handler="pyramid_formish.zcml.add_template_path"
       />
 
 </configure>
