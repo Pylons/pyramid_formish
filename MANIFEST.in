@@ -1,0 +1,2 @@
+recursive-include ponzi_auth *.txt *.html *.css *.zcml *.js *.css
+include *.txt README.* Makefile *.ini
