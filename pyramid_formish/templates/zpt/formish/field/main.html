@@ -4,5 +4,5 @@
   <div class="inputs" tal:content="structure field.widget()">
   </div>
   <span tal:condition="field.error" class="error">${unicode(field.error)}</span>
-  <span tal:condition="unicode(field.description) != ''">${field.description}</span>
+  <span tal:condition="field.description and unicode(field.description) != u''">${unicode(field.description)}</span>
 </div>
