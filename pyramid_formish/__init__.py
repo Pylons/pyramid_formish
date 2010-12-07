@@ -10,7 +10,7 @@ from zope.interface import Interface
 from zope.component import queryUtility
 from zope.component import getSiteManager
 
-from pyramid.settings import get_settings
+from pyramid.threadlocal import get_current_registry
 
 def cache(func):
     def load(self, *args):
@@ -58,7 +58,7 @@ class TemplateLoader(object):
 
 class ZPTRenderer(object):
     def __init__(self, directories=None):
-        settings = get_settings()
+        settings = get_current_registry().settings
         auto_reload = settings and settings['reload_templates'] or False
         if directories is None:
             directories = []

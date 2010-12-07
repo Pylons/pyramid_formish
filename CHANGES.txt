@@ -9,3 +9,5 @@ Next release
 - Replace ``str(field.description)`` with ``unicode(field.description)`` in
   field/main.html template to not barf on Unicode values.
 
+- Prevent deprecation error by using ``get_current_registry().settings``
+  rather than ``get_settings()``.
