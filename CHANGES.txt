@@ -6,4 +6,6 @@ Next release
 
 - Forked from repoze.bfg.formish 0.3.
 
+- Replace ``str(field.description)`` with ``unicode(field.description)`` in
+  field/main.html template to not barf on Unicode values.
 
