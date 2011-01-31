@@ -16,13 +16,10 @@ from zope.interface import implements
 from zope.schema import TextLine
 from zope.schema import Bool
 
-from pyramid.zcml import view
-
 from pyramid_formish import Form
 from pyramid_formish import ValidationError
 from pyramid_formish import IFormishSearchPath
-from pyramid.configuration import Configurator
-from pyramid.threadlocal import get_current_registry
+from pyramid.config import Configurator
 
 class IFormsDirective(Interface):
     view = GlobalObject(title=u'view', required=False)
@@ -69,9 +66,8 @@ class FormsDirective(zope.configuration.config.GroupingContextDecorator):
         self.forms = []
 
     def after(self):
-        reg = get_current_registry()
-        config = Configurator(reg, package=self.context.package)
-        derived_view = config._derive_view(self.view) # XXX using a non-API
+        config = Configurator.with_context(self.context)
+        derived_view = config.derive_view(self.view)
 
         def forms_view(context, request):
             forms = []
@@ -98,15 +94,15 @@ class FormsDirective(zope.configuration.config.GroupingContextDecorator):
 
             return derived_view(context, request)
 
-        view(self,
-             permission=self.permission,
-             for_=self.for_,
-             view=forms_view,
-             name=self.name,
-             route_name=self.route_name,
-             containment=self.containment,
-             renderer=self.renderer,
-             wrapper=self.wrapper)
+        config.add_view(
+            permission=self.permission,
+            for_=self.for_,
+            view=forms_view,
+            name=self.name,
+            route_name=self.route_name,
+            containment=self.containment,
+            renderer=self.renderer,
+            wrapper=self.wrapper)
 
 class FormDirective(zope.configuration.config.GroupingContextDecorator):
     implements(zope.configuration.config.IConfigurationContext,
@@ -136,21 +132,21 @@ class FormDirective(zope.configuration.config.GroupingContextDecorator):
             self.context.forms.append(self)
             return
         
+        config = Configurator.with_context(self.context)
         display_action = FormAction(None)
         for action in [display_action] + self._actions:
             form_view = FormView(self.controller, action, self._actions,
                                  self.form_id, self.method)
 
-            view(self,
-                 permission=self.permission,
-                 for_=self.for_,
-                 view=form_view,
-                 name=self.name,
-                 request_param=action.name,
-                 route_name=self.route_name,
-                 containment=self.containment,
-                 renderer=self.renderer,
-                 wrapper=self.wrapper)
+            config.add_view(permission=self.permission,
+                            for_=self.for_,
+                            view=form_view,
+                            name=self.name,
+                            request_param=action.name,
+                            route_name=self.route_name,
+                            containment=self.containment,
+                            renderer=self.renderer,
+                            wrapper=self.wrapper)
 
 class FormView(object):
     def __init__(self, controller_factory, action, actions, form_id=None,

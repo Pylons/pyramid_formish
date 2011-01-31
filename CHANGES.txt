@@ -11,3 +11,5 @@ Next release
 
 - Prevent deprecation error by using ``get_current_registry().settings``
   rather than ``get_settings()``.
+
+- Depends on Pyramid 1.0a10+.

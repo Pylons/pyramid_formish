@@ -3,10 +3,10 @@ from pyramid import testing
 
 class FormsDirectiveTests(unittest.TestCase):
     def setUp(self):
-        testing.cleanUp()
+        self.config = testing.setUp()
 
     def tearDown(self):
-        testing.cleanUp()
+        testing.tearDown()
         
     def _makeOne(self, context, **kw):
         from pyramid_formish.zcml import FormsDirective
@@ -14,15 +14,16 @@ class FormsDirectiveTests(unittest.TestCase):
 
     def test_after_render_view(self):
         from pyramid.view import render_view_to_response
+        from pyramid.config import PyramidConfigurationMachine
         def view(context, request):
             return 'response'
-        context = DummyZCMLContext()
+        context = PyramidConfigurationMachine()
+        context.registry = self.config.registry
+        context.autocommit = True
         directive = self._makeOne(context, view=view)
         directive.forms = [DummyFormDirective()]
         directive.actions = []
         directive.after()
-        for discrim, action in directive.actions:
-            action()
         request = testing.DummyRequest()
         display = render_view_to_response(None, request, '')
         self.assertEqual(display, 'response')
@@ -30,13 +31,15 @@ class FormsDirectiveTests(unittest.TestCase):
 
     def test_after_render_controller_submission(self):
         from pyramid.view import render_view_to_response
-        context = DummyZCMLContext()
+        from pyramid.config import PyramidConfigurationMachine
+        
+        context = PyramidConfigurationMachine()
+        context.registry = self.config.registry
+        context.autocommit = True
         directive = self._makeOne(context, view=None)
         directive.forms = [DummyFormDirective()]
         directive.actions = []
         directive.after()
-        for discrim, action in directive.actions:
-            action()
         request = testing.DummyRequest()
         request.params = {'__formish_form__':'form_id', 'submit':True}
         display = render_view_to_response(None, request, '')
@@ -44,11 +47,14 @@ class FormsDirectiveTests(unittest.TestCase):
         self.assertEqual(len(request.forms), 1)
 
     def test_after_render_controller_curriedview(self):
+        from pyramid.view import render_view_to_response
+        from pyramid.config import PyramidConfigurationMachine
+        from pyramid_formish import ValidationError
         def view(context, request):
             return 'response'
-        from pyramid_formish import ValidationError
-        from pyramid.view import render_view_to_response
-        context = DummyZCMLContext()
+        context = PyramidConfigurationMachine()
+        context.autocommit = True
+        context.registry = self.config.registry
         directive = self._makeOne(context, view=view)
         formdirective = DummyFormDirective()
         formdirective.controller = make_controller_factory(
@@ -56,8 +62,6 @@ class FormsDirectiveTests(unittest.TestCase):
         directive.forms = [formdirective]
         directive.actions = []
         directive.after()
-        for discrim, action in directive.actions:
-            action()
         request = testing.DummyRequest()
         request.params = {'__formish_form__':'form_id', 'submit':True}
         display = render_view_to_response(None, request, '')
@@ -66,10 +70,10 @@ class FormsDirectiveTests(unittest.TestCase):
 
 class FormDirectiveTests(unittest.TestCase):
     def setUp(self):
-        testing.cleanUp()
+        self.config = testing.setUp()
 
     def tearDown(self):
-        testing.cleanUp()
+        testing.tearDown()
         
     def _makeOne(self, context, controller_factory, **kw):
         from pyramid_formish.zcml import FormDirective
@@ -80,17 +84,17 @@ class FormDirectiveTests(unittest.TestCase):
         import schemaish
         from pyramid.view import render_view_to_response
         from pyramid_formish.zcml import FormAction
-        context = DummyZCMLContext()
+        from pyramid.config import PyramidConfigurationMachine
+        context = PyramidConfigurationMachine()
+        context.autocommit = True
+        context.registry = self.config.registry
+        request = testing.DummyRequest()
+        request.registry = self.config.registry
         title = schemaish.String()
         factory = make_controller_factory(fields=[('title', title)])
         directive = self._makeOne(context, factory)
-        directive.actions = []
         directive._actions = [FormAction('submit','title',True)]
         directive.after()
-        for discriminator, action in directive.actions:
-            action()
-
-        request = testing.DummyRequest()
         display = render_view_to_response(None, request, '')
         self.assertEqual(display, '123')
 
@@ -370,6 +374,8 @@ class TestAddTemplatePath(unittest.TestCase):
 class DummyZCMLContext:
     info = None
     package = 'pyramid_formish'
+    registry = None
+    autocommit = True
     def __init__(self, resolved=None):
         self.resolved = resolved
         self.ac =[]

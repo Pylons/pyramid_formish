@@ -25,7 +25,8 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
     'setuptools',
-    'pyramid',
+    'pyramid>=1.0a10', # zcml externalized
+    'pyramid_zcml',
     'formish',
     'Mako',
     ]
@@ -51,7 +52,7 @@ setup(name='pyramid_formish',
       packages=find_packages(),
       include_package_data=True,
       zip_safe=False,
-      tests_require = requires + ['pkginfo'],
+      tests_require = requires,
       install_requires= requires,
       test_suite="pyramid_formish",
       entry_points = """\
