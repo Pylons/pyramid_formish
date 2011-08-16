@@ -44,7 +44,7 @@ class FormsDirectiveTests(unittest.TestCase):
         request = testing.DummyRequest()
         request.params = {'__formish_form__':'form_id', 'submit':True}
         display = render_view_to_response(None, request, '')
-        self.assertEqual(display, 'submitted')
+        self.assertEqual(display.body, 'submitted')
         self.assertEqual(len(request.forms), 1)
 
     def test_after_render_controller_curriedview(self):
