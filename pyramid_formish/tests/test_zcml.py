@@ -15,8 +15,9 @@ class FormsDirectiveTests(unittest.TestCase):
     def test_after_render_view(self):
         from pyramid.view import render_view_to_response
         from pyramid.config import PyramidConfigurationMachine
+        from pyramid.response import Response
         def view(context, request):
-            return 'response'
+            return Response('response')
         context = PyramidConfigurationMachine()
         context.registry = self.config.registry
         context.autocommit = True
@@ -26,7 +27,7 @@ class FormsDirectiveTests(unittest.TestCase):
         directive.after()
         request = testing.DummyRequest()
         display = render_view_to_response(None, request, '')
-        self.assertEqual(display, 'response')
+        self.assertEqual(display.app_iter, ['response'])
         self.assertEqual(len(request.forms), 1)
 
     def test_after_render_controller_submission(self):
@@ -50,8 +51,9 @@ class FormsDirectiveTests(unittest.TestCase):
         from pyramid.view import render_view_to_response
         from pyramid.config import PyramidConfigurationMachine
         from pyramid_formish import ValidationError
+        from pyramid.response import Response
         def view(context, request):
-            return 'response'
+            return Response('response')
         context = PyramidConfigurationMachine()
         context.autocommit = True
         context.registry = self.config.registry
@@ -65,7 +67,7 @@ class FormsDirectiveTests(unittest.TestCase):
         request = testing.DummyRequest()
         request.params = {'__formish_form__':'form_id', 'submit':True}
         display = render_view_to_response(None, request, '')
-        self.assertEqual(display, 'response')
+        self.assertEqual(display.body, 'response')
         self.assertEqual(len(request.forms), 1)
 
 class FormDirectiveTests(unittest.TestCase):
@@ -96,13 +98,13 @@ class FormDirectiveTests(unittest.TestCase):
         directive._actions = [FormAction('submit','title',True)]
         directive.after()
         display = render_view_to_response(None, request, '')
-        self.assertEqual(display, '123')
+        self.assertEqual(display.body, '123')
 
         request = testing.DummyRequest()
         request.params = webob.multidict.MultiDict()
         request.params['submit'] = True
         display = render_view_to_response(None, request, '')
-        self.assertEqual(display, 'submitted')
+        self.assertEqual(display.body, 'submitted')
 
     def test_after_in_forms_context(self):
         context = DummyZCMLContext()
@@ -177,7 +179,7 @@ class TestFormView(unittest.TestCase):
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
-        self.assertEqual(result, '123')
+        self.assertEqual(result.body, '123')
 
     def test_formid(self):
         view = self._makeOne(None, {'name':1, 'validate':True}, None, 'default')
@@ -199,7 +201,7 @@ class TestFormView(unittest.TestCase):
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
-        self.assertEqual(result, 'cancelled')
+        self.assertEqual(result.body, 'cancelled')
 
     def test_with_actionsuccess(self):
         import schemaish
@@ -232,7 +234,7 @@ class TestFormView(unittest.TestCase):
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
-        self.assertEqual(result, 'submitted')
+        self.assertEqual(result.body, 'submitted')
         self.failUnless(request.form)
         self.assertEqual(dict(request.form.defaults), {'title':'the title'})
 
@@ -249,7 +251,7 @@ class TestFormView(unittest.TestCase):
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
-        self.assertEqual(result, '123')
+        self.assertEqual(result.body, '123')
         self.failUnless(request.form)
         self.assertEqual(dict(request.form.defaults), {'title':'the title'})
         self.failUnless('title' in request.form.errors)
@@ -268,7 +270,7 @@ class TestFormView(unittest.TestCase):
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
-        self.assertEqual(result, '123')
+        self.assertEqual(result.body, '123')
         self.failUnless(request.form)
         self.assertEqual(dict(request.form.defaults), {'title':'the title'})
         self.failUnless('title' in request.form.errors)
@@ -287,7 +289,7 @@ class TestFormView(unittest.TestCase):
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
-        self.assertEqual(result, 'validated')
+        self.assertEqual(result.body, 'validated')
 
     def test_with_widgets(self):
         import schemaish
@@ -304,7 +306,7 @@ class TestFormView(unittest.TestCase):
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
-        self.assertEqual(result, '123')
+        self.assertEqual(result.body, '123')
 
     def test_with_method_GET(self):
         import schemaish
@@ -321,7 +323,7 @@ class TestFormView(unittest.TestCase):
         context = testing.DummyModel()
         request = testing.DummyRequest()
         result = view(context, request)
-        self.assertEqual(result, '123')
+        self.assertEqual(result.body, '123')
 
 class TestAddTemplatePath(unittest.TestCase):
     def tearDown(self):
@@ -386,6 +388,7 @@ class DummyZCMLContext:
 
 def make_controller_factory(fields=(), defaults=None, result='123',
                             widgets=None, selfvalidate=False, exception=None):
+    from pyramid.response import Response
     class DummyController:
         def __init__(self, context, request):
             self.context = context
@@ -397,7 +400,7 @@ def make_controller_factory(fields=(), defaults=None, result='123',
                 return widgets
             return {}
         def __call__(self):
-            return result
+            return Response(result)
         def form_defaults(self):
             if defaults is None:
                 return {}
@@ -405,12 +408,12 @@ def make_controller_factory(fields=(), defaults=None, result='123',
         def handle_submit(self, converted):
             if exception:
                 raise exception
-            return 'submitted'
+            return Response('submitted')
         def handle_cancel(self):
-            return 'cancelled'
+            return Response('cancelled')
         if selfvalidate:
             def validate(self):
-                return 'validated'
+                return Response('validated')
 
     return DummyController
 
