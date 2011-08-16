@@ -27,7 +27,7 @@ class FormsDirectiveTests(unittest.TestCase):
         directive.after()
         request = testing.DummyRequest()
         display = render_view_to_response(None, request, '')
-        self.assertEqual(display.app_iter, ['response'])
+        self.assertEqual(display.body, 'response')
         self.assertEqual(len(request.forms), 1)
 
     def test_after_render_controller_submission(self):
