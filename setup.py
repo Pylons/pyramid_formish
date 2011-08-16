@@ -25,6 +25,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
     'setuptools',
+    'Chameleon <= 1.9999',
     'pyramid>=1.0a10', # zcml externalized
     'pyramid_zcml',
     'formish',
