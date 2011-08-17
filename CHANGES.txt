@@ -1,8 +1,5 @@
-pyramid_formish
-===============
-
-Next release
------------
+0.1 (2011-08-17
+----------------
 
 - Forked from repoze.bfg.formish 0.3.
 
@@ -12,4 +9,5 @@ Next release
 - Prevent deprecation error by using ``get_current_registry().settings``
   rather than ``get_settings()``.
 
-- Depends on Pyramid 1.0a10+.
+- Works works with Pyramid 1.0-1.2dev.
+

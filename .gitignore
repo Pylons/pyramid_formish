@@ -3,3 +3,7 @@
 *.egg-info
 *.coverage
 env26/
+.tox/
+dist/
+nosetests.xml
+pyramid_formish/coverage.xml

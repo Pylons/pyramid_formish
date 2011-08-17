@@ -12,20 +12,22 @@
 #
 ##############################################################################
 
-__version__ = '0.0'
-
 import os
 import sys
 
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.txt')).read()
-CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
+try:
+    README = open(os.path.join(here, 'README.txt')).read()
+    CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
+except:
+    README = ''
+    CHANGES = ''
 
 requires = [
     'setuptools',
-    'Chameleon <= 1.9999',
+    'Chameleon<=1.9999',
     'pyramid>=1.0a10', # zcml externalized
     'pyramid_zcml',
     'formish',
@@ -36,7 +38,7 @@ if sys.version_info[:2] < (2,5):
     requires.append('uuid')
 
 setup(name='pyramid_formish',
-      version=__version__,
+      version='0.1',
       description='Formish bindings and helpers for Pyramid web framework',
       long_description=README + '\n\n' +  CHANGES,
       classifiers=[

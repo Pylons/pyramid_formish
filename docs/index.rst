@@ -26,8 +26,13 @@ This package provides:
   collection of :mod:`pyramid_formish` "form controllers" to be
   able to render them in the same HTML page.
 
+This package requires Python>=2.6<=2.7X.  It also requires Chameleon>=1.999
+(it will not run under Chameleon 2.X).
+
 ZCML Directives
 ---------------
+
+``pyramid_formish`` uses ZCML to do its configuration.
 
 You must add the following to your application's ``configure.zcml`` to
 use the ``formish:form`` and ``formish:forms`` ZCML directives:
@@ -808,9 +813,9 @@ to convert a :mod:`repoze.bfg.formish` application to a
    :mod:`repoze.bfg.formish` 0.3.
 
 #. Install :mod:`pyramid_formish` into a *separate* virtualenv as per the
-   instructions in :ref:`installing_chapter`.  The :mod:`pyramid_formish`
-   virtualenv should be separate from the one you've used to install
-   :mod:`repoze.bfg.formish`.  A quick way to do this:
+   instructions in the Pyramid installation documentation.  The
+   :mod:`pyramid_formish` virtualenv should be separate from the one you've
+   used to install :mod:`repoze.bfg.formish`.  A quick way to do this:
 
    .. code-block:: bash
 
