@@ -7,3 +7,4 @@ env26/
 dist/
 nosetests.xml
 pyramid_formish/coverage.xml
+docs/_build/
