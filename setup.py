@@ -27,7 +27,7 @@ except:
 
 requires = [
     'setuptools',
-    'Chameleon<=1.9999',
+    'Chameleon>=2.0',
     'pyramid>=1.0a10', # zcml externalized
     'pyramid_zcml',
     'formish',
