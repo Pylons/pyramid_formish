@@ -57,7 +57,7 @@ class TestZPTRenderer(unittest.TestCase):
     def _getTargetClass(self):
         from pyramid_formish import ZPTRenderer
         return ZPTRenderer
-    
+
     def _makeOne(self, *arg, **kw):
         return self._getTargetClass()(*arg, **kw)
 
@@ -72,12 +72,12 @@ class TestZPTRenderer(unittest.TestCase):
     def test_call_defaultdir(self):
         renderer = self._makeOne()
         result = renderer('formish/test/test.html', {})
-        self.assertEqual(result, u'<div>Test</div>')
+        self.assertEqual(result.strip(), u'<div>Test</div>')
 
     def test_call_template_startswith_slash(self):
         renderer = self._makeOne()
         result = renderer('/formish/test/test.html', {})
-        self.assertEqual(result, u'<div>Test</div>')
+        self.assertEqual(result.strip(), u'<div>Test</div>')
 
 
     def test_call_extradir(self):
@@ -85,8 +85,8 @@ class TestZPTRenderer(unittest.TestCase):
         renderer = self._makeOne(
             [resource_filename('pyramid_formish.tests', 'fixtures')])
         result = renderer('test.html', {})
-        self.assertEqual(result, u'<div>Fixtures</div>')
-        
+        self.assertEqual(result.strip(), u'<div>Fixtures</div>')
+
     def test_call_with_utility_registrations(self):
         from pkg_resources import resource_filename
         from zope.component import getSiteManager
@@ -98,7 +98,7 @@ class TestZPTRenderer(unittest.TestCase):
         renderer = self._makeOne(
             [])
         result = renderer('test.html', {})
-        self.assertEqual(result, u'<div>Fixtures</div>')
+        self.assertEqual(result.strip(), u'<div>Fixtures</div>')
 
 class TestForm(unittest.TestCase):
     def _makeOne(self, *arg, **kw):
@@ -110,7 +110,7 @@ class TestForm(unittest.TestCase):
         from pyramid_formish import ZPTRenderer
         form = self._makeOne(Structure(), renderer=None)
         self.failIfEqual(form.renderer.__class__, ZPTRenderer)
-        
+
     def test_default_renderer(self):
         from schemaish import Structure
         from pyramid_formish import ZPTRenderer
@@ -126,5 +126,5 @@ class TestForm(unittest.TestCase):
         widget = Widget()
         form.set_widget('title', widget)
         self.assertEqual(form['title'].widget.widget, widget)
-        
-        
+
+

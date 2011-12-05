@@ -44,11 +44,10 @@ class TemplateLoader(object):
             if (path in self.notexists) and (not self.auto_reload):
                 raise mako.exceptions.TopLevelLookupException(
                     "Can not find template %s" % filename)
-            try:
+            if os.path.exists(path):
                 return PageTemplateFile(path, auto_reload=self.auto_reload,
                                         encoding='utf-8')
-            except OSError:
-                self.notexists[path] = True
+            self.notexists[path] = True
 
         raise mako.exceptions.TopLevelLookupException(
             "Can not find template %s" % filename)
