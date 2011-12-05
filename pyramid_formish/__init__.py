@@ -4,7 +4,6 @@ import mako
 import formish
 from pkg_resources import resource_filename
 
-from chameleon.zpt import language
 from chameleon.zpt.template import PageTemplateFile
 from zope.interface import Interface
 from zope.component import queryUtility
@@ -25,9 +24,8 @@ class IFormishSearchPath(Interface):
 
 class IFormishRenderer(Interface):
     """ Utility interface representing a formish renderer """
-    
+
 class TemplateLoader(object):
-    parser = language.Parser()
 
     def __init__(self, search_path=None, auto_reload=False):
         if search_path is None:
@@ -47,8 +45,7 @@ class TemplateLoader(object):
                 raise mako.exceptions.TopLevelLookupException(
                     "Can not find template %s" % filename)
             try:
-                return PageTemplateFile(path, parser=self.parser,
-                                        auto_reload=self.auto_reload,
+                return PageTemplateFile(path, auto_reload=self.auto_reload,
                                         encoding='utf-8')
             except OSError:
                 self.notexists[path] = True
@@ -95,7 +92,7 @@ class Form(formish.Form):
 
     def set_widget(self, title, widget):
         self[title].widget = widget
-        
+
 class ValidationError(Exception):
     def __init__(self, **errors):
         self.errors = errors
