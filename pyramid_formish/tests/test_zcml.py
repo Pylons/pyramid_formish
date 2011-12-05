@@ -14,11 +14,12 @@ class FormsDirectiveTests(unittest.TestCase):
 
     def test_after_render_view(self):
         from pyramid.view import render_view_to_response
-        from pyramid.config import PyramidConfigurationMachine
+        from zope.configuration.config import ConfigurationMachine
         from pyramid.response import Response
         def view(context, request):
             return Response('response')
-        context = PyramidConfigurationMachine()
+        context = ConfigurationMachine()
+        context.route_prefix = ''
         context.registry = self.config.registry
         context.autocommit = True
         directive = self._makeOne(context, view=view)
@@ -32,9 +33,10 @@ class FormsDirectiveTests(unittest.TestCase):
 
     def test_after_render_controller_submission(self):
         from pyramid.view import render_view_to_response
-        from pyramid.config import PyramidConfigurationMachine
+        from zope.configuration.config import ConfigurationMachine
         
-        context = PyramidConfigurationMachine()
+        context = ConfigurationMachine()
+        context.route_prefix = ''
         context.registry = self.config.registry
         context.autocommit = True
         directive = self._makeOne(context, view=None)
@@ -49,12 +51,13 @@ class FormsDirectiveTests(unittest.TestCase):
 
     def test_after_render_controller_curriedview(self):
         from pyramid.view import render_view_to_response
-        from pyramid.config import PyramidConfigurationMachine
+        from zope.configuration.config import ConfigurationMachine
         from pyramid_formish import ValidationError
         from pyramid.response import Response
         def view(context, request):
             return Response('response')
-        context = PyramidConfigurationMachine()
+        context = ConfigurationMachine()
+        context.route_prefix = ''
         context.autocommit = True
         context.registry = self.config.registry
         directive = self._makeOne(context, view=view)
@@ -86,8 +89,9 @@ class FormDirectiveTests(unittest.TestCase):
         import schemaish
         from pyramid.view import render_view_to_response
         from pyramid_formish.zcml import FormAction
-        from pyramid.config import PyramidConfigurationMachine
-        context = PyramidConfigurationMachine()
+        from zope.configuration.config import ConfigurationMachine
+        context = ConfigurationMachine()
+        context.route_prefix = ''
         context.autocommit = True
         context.registry = self.config.registry
         request = testing.DummyRequest()
