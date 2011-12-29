@@ -26,8 +26,8 @@ This package provides:
   collection of :mod:`pyramid_formish` "form controllers" to be
   able to render them in the same HTML page.
 
-This package requires Python>=2.6<=2.7X.  It also requires Chameleon>=1.999
-(it will not run under Chameleon 2.X).
+This package requires Python>=2.6<=2.7X.  It also requires Chameleon>=2.X.
+(it will not run under Chameleon 1.X).
 
 ZCML Directives
 ---------------
