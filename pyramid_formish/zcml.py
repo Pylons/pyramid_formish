@@ -174,7 +174,7 @@ def form_from_controller(controller, form_id, actions=(), method='POST'):
     form_schema = schemaish.Structure()
 
     form_fields = controller.form_fields()
-    for fieldname, field in controller.form_fields():
+    for fieldname, field in form_fields:
         form_schema.add(fieldname, field)
     form = Form(form_schema, name=form_id, add_default_action=False,
                 method=method)
